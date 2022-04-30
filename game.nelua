@@ -1,0 +1,283 @@
+require 'allocators.default'
+require 'filestream'
+
+require 'glfw'
+require 'glfwnative'
+require 'wgpu'
+
+-- init glfw
+glfwInit()
+
+-- create window with no client context
+glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API)
+local window = glfwCreateWindow(512, 512, "Window", nilptr, nilptr)
+if not window then
+  error "failed to create window!"
+end
+
+-- create surface
+## if ccinfo.is_windows then
+require 'windows'
+local surface = wgpuInstanceCreateSurface(
+  nilptr,
+  &(@WGPUSurfaceDescriptor){
+    label = nilptr,
+    nextInChain = (@*WGPUChainedStruct)(&(@WGPUSurfaceDescriptorFromWindowsHWND){
+      chain = (@WGPUChainedStruct){
+        next = nilptr,
+        sType = WGPUSType_SurfaceDescriptorFromWindowsHWND,
+      },
+      hinstance = GetModuleHandleW(nilptr),
+      hwnd = glfwGetWin32Window(window),
+    }),
+  }
+)
+## else
+local surface = wgpuInstanceCreateSurface(
+  nilptr,
+  &(@WGPUSurfaceDescriptor){
+    label = nilptr,
+    nextInChain = (@*WGPUChainedStruct)(&(@WGPUSurfaceDescriptorFromXlibWindow){
+      chain = (@WGPUChainedStruct){
+        next = nilptr,
+        sType = WGPUSType_SurfaceDescriptorFromXlibWindow,
+      },
+      display = glfwGetX11Display(),
+      window = glfwGetX11Window(window),
+    }),
+  }
+)
+## end
+
+-- request adapter
+local adapter: WGPUAdapter
+wgpuInstanceRequestAdapter(
+  nilptr,
+  &(@WGPURequestAdapterOptions){
+    nextInChain = (@*WGPUChainedStruct)(&(@WGPUAdapterExtras){
+      chain = (@WGPUChainedStruct){
+        next = nilptr,
+        sType = WGPUSType_AdapterExtras,
+      },
+      backend = WGPUBackendType_Vulkan,
+    }),
+    compatibleSurface = surface,
+  },
+  function (status: WGPURequestAdapterStatus, received: WGPUAdapter, message: cstring, userdata: pointer): void
+    $(@*WGPUAdapter)(userdata) = received
+  end,
+  &adapter
+)
+
+-- request device
+local device: WGPUDevice
+wgpuAdapterRequestDevice(
+  adapter,
+  &(@WGPUDeviceDescriptor){
+    nextInChain = (@*WGPUChainedStruct)(&(@WGPUDeviceExtras){
+      chain = (@WGPUChainedStruct){
+        next = nilptr,
+        sType = WGPUSType_DeviceExtras,
+      },
+      label = "Device",
+      tracePath = nilptr,
+    }),
+    requiredLimits = &(@WGPURequiredLimits){
+      nextInChain = nilptr,
+      limits = (@WGPULimits){
+        maxBindGroups = 1,
+      },
+    },
+    defaultQueue = (@WGPUQueueDescriptor){
+      nextInChain = nilptr,
+      label = nilptr,
+    },
+  },
+  function (status: WGPURequestDeviceStatus, received: WGPUDevice, message: cstring, userdata: pointer): void
+    $(@*WGPUDevice)(userdata) = received
+  end,
+  &device
+)
+
+-- load shader
+local function load_wgsl(name: string): WGPUShaderModuleDescriptor
+  local file = filestream.open(name, "rb")
+  file:seek("set", 0)
+  local bytes = file:read("a")
+
+  local wgslDescriptor = default_allocator:new(@WGPUShaderModuleWGSLDescriptor)
+  wgslDescriptor.chain.next = nilptr
+  wgslDescriptor.chain.sType = WGPUSType_ShaderModuleWGSLDescriptor
+  wgslDescriptor.code = bytes
+  return (@WGPUShaderModuleDescriptor){
+    nextInChain = (@*WGPUChainedStruct)(wgslDescriptor),
+    label = name,
+  }
+end
+local shaderSource = load_wgsl("shader.wgsl")
+local shader = wgpuDeviceCreateShaderModule(device, &shaderSource)
+
+-- build pipeline
+local pipelineLayout = wgpuDeviceCreatePipelineLayout(
+  device,
+  &(@WGPUPipelineLayoutDescriptor){
+    bindGroupLayouts = nilptr,
+    bindGroupLayoutCount = 0,
+  }
+)
+
+local swapchainFormat = wgpuSurfaceGetPreferredFormat(surface, adapter)
+
+local pipeline = wgpuDeviceCreateRenderPipeline(
+  device,
+  &(@WGPURenderPipelineDescriptor){
+    label = "Render pipeline",
+    layout = pipelineLayout,
+    vertex = (@WGPUVertexState){
+      module = shader,
+      entryPoint = "vs_main",
+      bufferCount = 0,
+      buffers = nilptr,
+    },
+    primitive = (@WGPUPrimitiveState){
+      topology = WGPUPrimitiveTopology_TriangleList,
+      stripIndexFormat = WGPUIndexFormat_Undefined,
+      frontFace = WGPUFrontFace_CCW,
+      cullMode = WGPUCullMode_None,
+    },
+    multisample = (@WGPUMultisampleState){
+      count = 1,
+      mask = 0xffffffff,
+      alphaToCoverageEnabled = false,
+    },
+    fragment = &(@WGPUFragmentState){
+      module = shader,
+      entryPoint = "fs_main",
+      targetCount = 1,
+      targets = &(@WGPUColorTargetState){
+        format = swapchainFormat,
+        blend = &(WGPUBlendState){
+          color = (@WGPUBlendComponent){
+            srcFactor = WGPUBlendFactor_One,
+            dstFactor = WGPUBlendFactor_Zero,
+            operation = WGPUBlendOperation_Add,
+          },
+          alpha = (@WGPUBlendComponent){
+            srcFactor = WGPUBlendFactor_One,
+            dstFactor = WGPUBlendFactor_Zero,
+            operation = WGPUBlendOperation_Add,
+          },
+        },
+        writeMask = WGPUColorWriteMask_All
+      },
+    },
+    depthStencil = nilptr,
+  }
+)
+
+-- create swapchain
+local prevWidth: cint = 0
+local prevHeight: cint = 0
+glfwGetWindowSize(window, &prevWidth, &prevHeight)
+
+local swapchain = wgpuDeviceCreateSwapChain(
+  device,
+  surface,
+  &(@WGPUSwapChainDescriptor){
+    usage = WGPUTextureUsage_RenderAttachment,
+    format = swapchainFormat,
+    width = prevWidth,
+    height = prevHeight,
+    presentMode = WGPUPresentMode_Fifo,
+  }
+)
+
+-- main loop
+while glfwWindowShouldClose(window) == 0 do
+  local nextTexture: WGPUTextureView = nilptr
+
+  for attempt=0,1 do
+    local width: cint = 0
+    local height: cint = 0
+    glfwGetWindowSize(window, &width, &height)
+
+    -- recreate swapchain if the window size changes
+    if (width ~= prevWidth or height ~= prevHeight) then
+      prevWidth = width
+      prevHeight = height
+
+      swapchain = wgpuDeviceCreateSwapChain(
+        device,
+        surface,
+        &(@WGPUSwapChainDescriptor){
+          usage = WGPUTextureUsage_RenderAttachment,
+          format = swapchainFormat,
+          width = prevWidth,
+          height = prevHeight,
+          presentMode = WGPUPresentMode_Fifo,
+        }
+      )
+    end
+
+    nextTexture = wgpuSwapChainGetCurrentTextureView(swapchain)
+
+    if (attempt == 0 and nextTexture == nilptr) then
+      print("wgpuSwapChainGetCurrentTextureView() failed; trying to recreate swapchain")
+      prevWidth = 0
+      prevHeight = 0
+      continue
+    end
+
+    break
+  end
+
+  if (nextTexture == nilptr) then
+    print("failed to acquire next swapchain texture")
+    return 1
+  end
+
+  local encoder = wgpuDeviceCreateCommandEncoder(
+    device,
+    &(@WGPUCommandEncoderDescriptor){
+      label = "Command Encoder",
+    }
+  )
+
+  local renderpass = wgpuCommandEncoderBeginRenderPass(
+    encoder,
+    &(@WGPURenderPassDescriptor){
+      colorAttachments = &(@WGPURenderPassColorAttachment){
+        view = nextTexture,
+        resolveTarget = nilptr,
+        loadOp = WGPULoadOp_Clear,
+        storeOp = WGPUStoreOp_Store,
+        clearValue = (@WGPUColor){
+          r = 0.0,
+          g = 1.0,
+          b = 0.0,
+          a = 1.0,
+        },
+      },
+      colorAttachmentCount = 1,
+      depthStencilAttachment = nilptr,
+    }
+  )
+
+  wgpuRenderPassEncoderSetPipeline(renderpass, pipeline)
+  wgpuRenderPassEncoderDraw(renderpass, 3, 1, 0, 0)
+  wgpuRenderPassEncoderEnd(renderpass)
+
+  local queue = wgpuDeviceGetQueue(device)
+  local cmdBuffer = wgpuCommandEncoderFinish(
+    encoder,
+    &(@WGPUCommandBufferDescriptor){
+      label = nilptr,
+    }
+  )
+  wgpuQueueSubmit(queue, 1, &cmdBuffer)
+  wgpuSwapChainPresent(swapchain)
+
+  glfwPollEvents()
+end
+
+glfwTerminate()
