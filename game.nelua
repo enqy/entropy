@@ -61,6 +61,7 @@ wgpuInstanceRequestAdapter(
       },
       backend = WGPUBackendType_Vulkan,
     }),
+    powerPreference = WGPUPowerPreference_HighPerformance,
     compatibleSurface = surface,
   },
   function (status: WGPURequestAdapterStatus, received: WGPUAdapter, message: cstring, userdata: pointer): void
@@ -252,9 +253,9 @@ while glfwWindowShouldClose(window) == 0 do
         loadOp = WGPULoadOp_Clear,
         storeOp = WGPUStoreOp_Store,
         clearValue = (@WGPUColor){
-          r = 0.0,
-          g = 1.0,
-          b = 0.0,
+          r = 0.1,
+          g = 0.1,
+          b = 0.1,
           a = 1.0,
         },
       },
