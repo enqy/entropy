@@ -1,17 +1,25 @@
 {
-  description = "chargino: A nix + nelua 3d/vr experience framework";
+  description = "entropy: A nix + nelua 3d/vr experience framework";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs-mozilla.url = "github:mozilla/nixpkgs-mozilla";
 
-    flake-utils.url = "github:numtide/flake-utils";
+    flake-utils = {
+      url = "github:numtide/flake-utils";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    gitignore = {
+      url = "github:hercules-ci/gitignore.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-mozilla, flake-utils }:
+  outputs = { self, nixpkgs, nixpkgs-mozilla, flake-utils, gitignore }@inputs:
     let
       inherit (nixpkgs.lib) recursiveUpdate recurseIntoAttrs optional;
       inherit (flake-utils.lib) eachSystem flattenTree;
+      inherit (gitignore.lib) gitignoreSource;
     in
     # supported systems that we can run builds from
     eachSystem [
@@ -46,13 +54,15 @@
                     glfw-nelua
                     glfwnative-nelua
                     wgpu-nelua
+
+                    entropy
                   ];
 
                   baseDrv = extraModules: {
                     pname = "game";
                     version = "0.1.0";
 
-                    src = ./.;
+                    src = gitignoreSource ./.;
 
                     nativeBuildInputs = [
                       nelua
@@ -61,7 +71,7 @@
                     # build NELUA_PATH so that nelua can find all of our modules
                     preBuild =
                       let
-                        nelua_path = "${nelua}/lib/nelua/lib/?.nelua;" + (nixpkgs.lib.foldr (module: path: "${module}/nelua/?.nelua;" + path) ";" (nelua_modules ++ extraModules));
+                        nelua_path = "./?.nelua;${nelua}/lib/nelua/lib/?.nelua;" + (nixpkgs.lib.foldr (module: path: "${module}/nelua/?.nelua;" + path) ";" (nelua_modules ++ extraModules));
                       in
                       ''
                         export HOME=$TMPDIR
@@ -73,7 +83,7 @@
 
                     installPhase = ''
                       mkdir -p $out/bin
-                      nelua --cc $CC game.nelua -o $out/bin/game
+                      nelua --cc $CC main.nelua -o $out/bin/game
 
                       runHook postInstall
                     '';
@@ -361,6 +371,16 @@
                 pkgs.runCommand "windows-nelua" { } ''
                   mkdir -p $out/nelua
                   cp ${nelua-decl}/nelua/windows.nelua $out/nelua
+                '';
+
+              # ===== ACTUAL ENTROPY ENGINE =====
+              entropy =
+                let
+                  src = gitignoreSource ./entropy;
+                in
+                pkgs.runCommand "entropy" { } ''
+                  mkdir -p $out/nelua
+                  cp -R ${src} $out/nelua/entropy
                 '';
             };
 
