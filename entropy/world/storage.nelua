@@ -1,0 +1,102 @@
+require 'vector'
+
+require 'entropy.world.pointer'
+
+## local function make_StorageT(T)
+  ## static_assert(traits.is_type(T), "invalid type '%s'", T)
+  local T: type = @#[T]#
+
+  local StorageT: type <nickname(#[string.format('Storage(%s)', T)]#)> = @record{
+    data: vector(T),
+    refs: vector(uint16),
+    free: vector(usize),
+  }
+
+  function StorageT:reserve(n: usize): void
+    if self.data:capacity() < n then
+      self.data:reserve(n)
+      self.refs:reserve(n)
+    end
+  end
+
+  function StorageT:create(item: T): Pointer(T)
+    if #self.free > 0 then
+      local id = self.free:pop()
+
+      -- sanity check
+      check(self.refs[id] == 0, "supposedly free id still has references!")
+
+      self.data[id] = item
+      self.refs[id] = 1
+
+      return {
+        id = id,
+      }
+    else
+      self.data:push(item)
+      local id = #self.data - 1
+      self.refs:push(1)
+
+      -- sanity check
+      check(id == #self.refs - 1, "ids between refcount and data don't match up!")
+
+      return {
+        id = id,
+      }
+    end
+  end
+
+  function StorageT:pin(ptr: Pointer(T)): Pointer(T)
+    check(ptr.id < #self.data - 1, "invalid item!")
+    check(self.refs[ptr.id] > 0, "dead item!")
+
+    self.refs[ptr.id] = self.refs[ptr.id] + 1
+    return {
+      id = ptr.id,
+    }
+  end
+
+  function StorageT:unpin_id(id: usize): void
+    check(id < #self.data - 1, "invalid id!")
+    check(self.refs[id] > 0, "dead id!")
+
+    self.refs[id] = self.refs[id] - 1
+    if self.refs[id] == 0 then
+      self.free:push(id)
+    end
+  end
+
+  function StorageT:unpin(ptr: Pointer(T)): void
+    self:unpin_id(ptr.id)
+  end
+
+  function StorageT:__atindex(ptr: Pointer(T)): *T
+    check(ptr.id < #self.data, "invalid ptr!")
+    check(self.refs[ptr.id] > 0, "dead ptr!")
+
+    return &self.data[ptr.id]
+  end
+
+  function StorageT:__mnext(ctrl_var: isize): (boolean, isize, *T)
+    ctrl_var = ctrl_var + 1
+
+    while ctrl_var < #self.data do
+      if self.refs[ctrl_var] > 0 then
+        return true, ctrl_var, &self.data[ctrl_var]
+      else
+        ctrl_var = ctrl_var + 1
+      end
+    end
+
+    return false, -1, nilptr
+  end
+
+  function StorageT:__mpairs(): (auto, *StorageT, isize)
+    return StorageT.__mnext, self, -1
+  end
+
+  ## return StorageT
+## end
+
+global Storage: type = #[generalize(make_StorageT)]#
+return Storage

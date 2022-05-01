@@ -1,1 +1,64 @@
-require 'entropy.prelude'
+require 'iterators'
+require 'string'
+require 'os'
+
+require 'entropy.world.storage'
+local P = require 'entropy.world.pointer'
+
+local Entity: type = @record{
+  pos: P(float64),
+  vel: P(float64),
+}
+
+local entities: Storage(Entity)
+entities:reserve(10000)
+local positions: Storage(float64)
+positions:reserve(10000)
+local velocities: Storage(float64)
+velocities:reserve(10000)
+
+--[[
+for i=0,10 do
+  local pos = positions:create(i * 2)
+  local vel = velocities:create(i / 2)
+  local entity = entities:create({
+    pos = pos,
+    vel = vel,
+  })
+end
+
+-- Initial State
+print("===== Initial State =====")
+for id, e in mpairs(entities) do
+  print(id, e, positions[e.pos], velocities[e.vel])
+end
+
+-- Run "System"
+for _, e in mpairs(entities) do
+  positions[e.pos] = positions[e.pos] + velocities[e.vel]
+end
+
+-- Final State
+print("===== Final State =====")
+for id, e in mpairs(entities) do
+  print(id, e, positions[e.pos], velocities[e.vel])
+end
+]]
+
+-- Benchmark
+print("===== Benching with 10,000 Entities =====")
+
+local now = os.now()
+for i=0,10000 do
+  entities:create({
+    pos = positions:create(i),
+    vel = velocities:create(i),
+  })
+end
+print("Creation: ", (os.now() - now) * 1000000)
+
+now = os.now()
+for id, e in mpairs(entities) do
+  positions[e.pos] = positions[e.pos] + velocities[e.vel]
+end
+print("Iteration: ", (os.now() - now) * 1000000)
