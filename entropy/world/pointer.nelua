@@ -1,11 +1,5 @@
 ## local function make_PointerT(T)
-  local T: type = @#[T]#
-
-  local PointerT: type <nickname(#[string.format('Pointer(%s)', T)]#)> = @record{
-    id: usize,
-  }
-
-  ## return PointerT
+  ## return usize
 ## end
 
 global Pointer: type = #[generalize(make_PointerT)]#

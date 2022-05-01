@@ -1,7 +1,5 @@
 require 'vector'
 
-require 'entropy.world.pointer'
-
 ## local function make_StorageT(T)
   ## static_assert(traits.is_type(T), "invalid type '%s'", T)
   local T: type = @#[T]#
@@ -19,7 +17,7 @@ require 'entropy.world.pointer'
     end
   end
 
-  function StorageT:create(item: T): Pointer(T)
+  function StorageT:create(item: T): usize
     if #self.free > 0 then
       local id = self.free:pop()
 
@@ -29,9 +27,7 @@ require 'entropy.world.pointer'
       self.data[id] = item
       self.refs[id] = 1
 
-      return {
-        id = id,
-      }
+      return id
     else
       self.data:push(item)
       local id = #self.data - 1
@@ -40,23 +36,19 @@ require 'entropy.world.pointer'
       -- sanity check
       check(id == #self.refs - 1, "ids between refcount and data don't match up!")
 
-      return {
-        id = id,
-      }
+      return id
     end
   end
 
-  function StorageT:pin(ptr: Pointer(T)): Pointer(T)
-    check(ptr.id < #self.data - 1, "invalid item!")
-    check(self.refs[ptr.id] > 0, "dead item!")
+  function StorageT:pin(id: usize): usize
+    check(id < #self.data - 1, "invalid id!")
+    check(self.refs[id] > 0, "dead id!")
 
-    self.refs[ptr.id] = self.refs[ptr.id] + 1
-    return {
-      id = ptr.id,
-    }
+    self.refs[id] = self.refs[id] + 1
+    return id
   end
 
-  function StorageT:unpin_id(id: usize): void
+  function StorageT:unpin(id: usize): void
     check(id < #self.data - 1, "invalid id!")
     check(self.refs[id] > 0, "dead id!")
 
@@ -66,15 +58,11 @@ require 'entropy.world.pointer'
     end
   end
 
-  function StorageT:unpin(ptr: Pointer(T)): void
-    self:unpin_id(ptr.id)
-  end
+  function StorageT:__atindex(id: usize): *T
+    check(id < #self.data, "invalid id!")
+    check(self.refs[id] > 0, "dead id!")
 
-  function StorageT:__atindex(ptr: Pointer(T)): *T
-    check(ptr.id < #self.data, "invalid ptr!")
-    check(self.refs[ptr.id] > 0, "dead ptr!")
-
-    return &self.data[ptr.id]
+    return &self.data[id]
   end
 
   function StorageT:__mnext(ctrl_var: isize): (boolean, isize, *T)
