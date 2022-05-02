@@ -1,10 +1,10 @@
-require 'vector'
+require "vector"
 
 ## local function make_StorageT(T)
   ## static_assert(traits.is_type(T), "invalid type '%s'", T)
   local T: type = @#[T]#
 
-  local StorageT: type <nickname(#[string.format('Storage(%s)', T)]#)> = @record{
+  local StorageT: type <nickname(#[string.format("Storage(%s)", T)]#)> = @record{
     data: vector(T),
     refs: vector(uint16),
     free: vector(usize),
@@ -86,5 +86,4 @@ require 'vector'
   ## return StorageT
 ## end
 
-global Storage: type = #[generalize(make_StorageT)]#
-return Storage
+return #[generalize(make_StorageT)]#

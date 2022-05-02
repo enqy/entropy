@@ -1,25 +1,38 @@
-require 'iterators'
-require 'string'
-require 'os'
+require "iterators"
+require "string"
+require "os"
 
-require 'entropy.world.storage'
-local P = require 'entropy.world.pointer'
+local world = require "entropy.world"
+local Storage = world.Storage
+local P = world.Pointer
+local math = require "entropy.math"
+local Vec2 = math.Vec2
+local Quaternion = math.Quaternion
+
+local a: Quaternion = {
+  x = 3,
+  y = 3,
+  z = 1,
+  w = 2,
+}
+local b = a + a
+print(b)
 
 local Entity: type = @record{
-  pos: P(float64),
-  vel: P(float64),
+  pos: P(Vec2),
+  vel: P(Vec2),
 }
 
 local entities: Storage(Entity)
 entities:reserve(10000)
-local positions: Storage(float64)
+local positions: Storage(Vec2)
 positions:reserve(10000)
-local velocities: Storage(float64)
+local velocities: Storage(Vec2)
 velocities:reserve(10000)
 
 for i=0,10 do
-  local pos = positions:create(i * 2)
-  local vel = velocities:create(i / 2)
+  local pos = positions:create({ x = i, y = i })
+  local vel = velocities:create({ x = i, y = i })
   local entity = entities:create({
     pos = pos,
     vel = vel,
@@ -49,8 +62,8 @@ print("===== Benching with 10,000 Entities =====")
 local now = os.now()
 for i=0,9990 do
   entities:create({
-    pos = positions:create(i),
-    vel = velocities:create(i),
+    pos = positions:create({ x = i, y = i }),
+    vel = velocities:create({ x = i, y = i }),
   })
 end
 print("Creation: ", (os.now() - now) * 1000000)

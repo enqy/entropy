@@ -2,5 +2,4 @@
   ## return usize
 ## end
 
-global Pointer: type = #[generalize(make_PointerT)]#
-return Pointer
+return #[generalize(make_PointerT)]#

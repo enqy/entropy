@@ -1,0 +1,6 @@
+local world: type = @record{}
+
+local world.Storage = require "entropy.world.storage"
+local world.Pointer = require "entropy.world.pointer"
+
+return world
