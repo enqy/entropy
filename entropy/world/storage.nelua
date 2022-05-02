@@ -1,23 +1,27 @@
 require "vector"
 
-## local function make_StorageT(T)
+-- there is a workaround here to get the compiler to generate valud c code by manually creating methods with . instead of :
+## function make_StorageT(name, T)
   ## static_assert(traits.is_type(T), "invalid type '%s'", T)
   local T: type = @#[T]#
 
+  local Pointer = require "entropy.world.pointer"
   local StorageT: type <nickname(#[string.format("Storage(%s)", T)]#)> = @record{
     data: vector(T),
     refs: vector(uint16),
     free: vector(usize),
   }
 
-  function StorageT:reserve(n: usize): void
+  ## StorageT.value.world_name = name
+
+  function StorageT.reserve(self: *StorageT, n: usize): void
     if self.data:capacity() < n then
       self.data:reserve(n)
       self.refs:reserve(n)
     end
   end
 
-  function StorageT:create(item: T): usize
+  function StorageT.create(self: *StorageT, item: T): Pointer(name, T) <inline>
     if #self.free > 0 then
       local id = self.free:pop()
 
@@ -27,7 +31,9 @@ require "vector"
       self.data[id] = item
       self.refs[id] = 1
 
-      return id
+      return {
+        id = id
+      }
     else
       self.data:push(item)
       local id = #self.data - 1
@@ -36,36 +42,40 @@ require "vector"
       -- sanity check
       check(id == #self.refs - 1, "ids between refcount and data don't match up!")
 
-      return id
+      return {
+        id = id
+      }
     end
   end
 
-  function StorageT:pin(id: usize): usize
-    check(id < #self.data - 1, "invalid id!")
-    check(self.refs[id] > 0, "dead id!")
+  function StorageT.pin(self: *StorageT, ptr: Pointer(name, T)): Pointer(name, T) <inline>
+    check(ptr.id < #self.data - 1, "invalid ptr!")
+    check(self.refs[ptr.id] > 0, "dead ptr!")
 
-    self.refs[id] = self.refs[id] + 1
-    return id
+    self.refs[ptr.id] = self.refs[ptr.id] + 1
+    return {
+      id = ptr.id
+    }
   end
 
-  function StorageT:unpin(id: usize): void
-    check(id < #self.data - 1, "invalid id!")
-    check(self.refs[id] > 0, "dead id!")
+  function StorageT.unpin(self: *StorageT, ptr: Pointer(name, T)): void <inline>
+    check(ptr.id < #self.data - 1, "invalid ptr!")
+    check(self.refs[ptr.id] > 0, "dead ptr!")
 
-    self.refs[id] = self.refs[id] - 1
-    if self.refs[id] == 0 then
-      self.free:push(id)
+    self.refs[ptr.id] = self.refs[ptr.id] - 1
+    if self.refs[ptr.id] == 0 then
+      self.free:push(ptr.id)
     end
   end
 
-  function StorageT:__atindex(id: usize): *T
-    check(id < #self.data, "invalid id!")
-    check(self.refs[id] > 0, "dead id!")
+  function StorageT.__atindex(self: *StorageT, ptr: Pointer(name, T)): *T <inline>
+    check(ptr.id < #self.data, "invalid ptr!")
+    check(self.refs[ptr.id] > 0, "dead ptr!")
 
-    return &self.data[id]
+    return &self.data[ptr.id]
   end
 
-  function StorageT:__mnext(ctrl_var: isize): (boolean, isize, *T)
+  function StorageT.__mnext(self: *StorageT, ctrl_var: isize): (boolean, isize, *T) <inline>
     ctrl_var = ctrl_var + 1
 
     while ctrl_var < #self.data do
@@ -79,9 +89,13 @@ require "vector"
     return false, -1, nilptr
   end
 
-  function StorageT:__mpairs(): (auto, *StorageT, isize)
+  function StorageT.__mpairs(self: *StorageT): (auto, *StorageT, isize) <inline>
     return StorageT.__mnext, self, -1
   end
+
+  ## function StorageT.is_defined()
+    ## return true
+  ## end
 
   ## return StorageT
 ## end

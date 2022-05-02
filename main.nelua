@@ -2,35 +2,37 @@ require "iterators"
 require "string"
 require "os"
 
-local world = require "entropy.world"
-local Storage = world.Storage
-local P = world.Pointer
+local World = require "entropy.world"
+require "entropy.world"
+local Storage = World.Storage
+local P = World.Pointer
 local math = require "entropy.math"
 local Vec2 = math.Vec2
 local Quaternion = math.Quaternion
 
-local a: Quaternion = {
-  x = 3,
-  y = 3,
-  z = 1,
-  w = 2,
+local Position = @record{ pos: Vec2 }
+
+local world: World
+
+-- register components
+World.r("positions", Vec2)
+World.r("velocities", Vec2)
+
+local Entity = @record{
+  pos: P("positions", Vec2),
+  vel: P("velocities", Vec2),
 }
-local b = a + a
-print(b)
 
-local Entity: type = @record{
-  pos: P(Vec2),
-  vel: P(Vec2),
-}
+World.r("entities", Entity)
 
-local entities: Storage(Entity)
-entities:reserve(10000)
-local positions: Storage(Vec2)
-positions:reserve(10000)
-local velocities: Storage(Vec2)
-velocities:reserve(10000)
+local positions = world:s("positions")
+positions:reserve(10010)
+local velocities = world:s("velocities")
+velocities:reserve(10010)
+local entities = world:s("entities")
+entities:reserve(10010)
 
-for i=0,10 do
+for i=0,<10 do
   local pos = positions:create({ x = i, y = i })
   local vel = velocities:create({ x = i, y = i })
   local entity = entities:create({
@@ -60,11 +62,17 @@ end
 print("===== Benching with 10,000 Entities =====")
 
 local now = os.now()
-for i=0,9990 do
-  entities:create({
-    pos = positions:create({ x = i, y = i }),
-    vel = velocities:create({ x = i, y = i }),
-  })
+for i=0,<10000 do
+  if i % 10 == 0 then
+    entities:create({
+      pos = positions:create({ x = i, y = i }),
+      vel = velocities:create({ x = i, y = i }),
+    })
+  else
+    entities:create({
+      pos = positions:create({ x = i, y = i }),
+    })
+  end
 end
 print("Creation: ", (os.now() - now) * 1000000)
 
@@ -72,4 +80,7 @@ now = os.now()
 for id, e in mpairs(entities) do
   positions[e.pos] = positions[e.pos] + velocities[e.vel]
 end
+
+--[[for id, e in mpairs(entities.data) do
+end]]
 print("Iteration: ", (os.now() - now) * 1000000)

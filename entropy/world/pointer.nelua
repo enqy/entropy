@@ -1,5 +1,26 @@
-## local function make_PointerT(T)
-  ## return usize
+## local function make_PointerT(storage_name, T)
+  local T: type = @#[T]#
+  local storage_name: string = #[storage_name]#
+
+  local PointerT: type <nickname(#[string.format("Pointer(%s, %s)", storage_name, T)]#)> = @record{
+    id: usize
+  }
+
+  ## PointerT.value.inner_type = T
+  ## PointerT.value.storage_name = storage_name
+  ## PointerT.value.is_storage_pointer = true
+
+  function PointerT:__tostring(): string
+    return "Pointer(" .. storage_name .. ", " .. T .. ", " .. self.id .. ")"
+  end
+
+  function PointerT:__convert(id: usize): PointerT
+    return {
+      id = id
+    }
+  end
+
+  ## return PointerT
 ## end
 
 return #[generalize(make_PointerT)]#

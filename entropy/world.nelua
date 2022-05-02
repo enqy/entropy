@@ -1,6 +1,28 @@
-local world: type = @record{}
+require "string"
 
-local world.Storage = require "entropy.world.storage"
-local world.Pointer = require "entropy.world.pointer"
+local World: type = @record{}
+## World.value.storages = {}
 
-return world
+local World.Storage = require "entropy.world.storage"
+local World.Pointer = require "entropy.world.pointer"
+
+-- Register a new component to be stored
+function World.r(name: string <comptime>, T: type): void <inline>
+  ##[[
+  if World.value.storages[name.value] == nil then
+    World.value:add_field(name.value, make_StorageT(name.value, T.value).value)
+    World.value.storages[name.value] = true
+  else
+    static_error("storage %s already registered for type %s!", name.value, T)
+  end
+  ]]
+end
+
+-- get a reference to a storage
+function World:s(name: string <comptime>): auto <inline>
+  ## static_assert(World.value.storages[name.value] ~= nil, "storage %s is not registered for a type!", name.value)
+
+  return &self.#|name.value|#
+end
+
+return World
