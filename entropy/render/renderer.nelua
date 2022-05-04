@@ -1,0 +1,28 @@
+require "wgpu"
+
+local Renderer: type = @record{
+  device: WGPUDevice,
+  queue: WGPUQueue,
+
+  target_config: record{
+    format: WGPUTextureFormat,
+    width: uint32,
+    height: uint32,
+  },
+}
+
+-- Create a renderer from a device
+function Renderer.create(device: WGPUDevice, target_format: WGPUTextureFormat, target_width: uint32, target_height: uint32): Renderer
+  return {
+    device = device,
+    queue = wgpuDeviceGetQueue(device),
+
+    target_config = {
+      format = target_format,
+      width = target_width,
+      height = target_height,
+    },
+  }
+end
+
+return Renderer

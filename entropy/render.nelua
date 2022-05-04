@@ -1,0 +1,7 @@
+local World = require "entropy.world"
+
+local render: type = @record{}
+
+local render.Renderer = require "entropy.render.renderer"
+
+return render
