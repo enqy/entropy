@@ -10,8 +10,6 @@ local math = require "entropy.math"
 local Vec2 = math.Vec2
 local Quaternion = math.Quaternion
 
-local Position = @record{ pos: Vec2 }
-
 local world: World
 
 -- register components
