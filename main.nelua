@@ -80,7 +80,4 @@ now = os.now()
 for id, e in mpairs(entities) do
   positions[e.pos] = positions[e.pos] + velocities[e.vel]
 end
-
---[[for id, e in mpairs(entities.data) do
-end]]
 print("Iteration: ", (os.now() - now) * 1000000)

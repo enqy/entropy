@@ -31,9 +31,7 @@ require "vector"
       self.data[id] = item
       self.refs[id] = 1
 
-      return {
-        id = id
-      }
+      return id
     else
       self.data:push(item)
       local id = #self.data - 1
@@ -42,37 +40,33 @@ require "vector"
       -- sanity check
       check(id == #self.refs - 1, "ids between refcount and data don't match up!")
 
-      return {
-        id = id
-      }
+      return id
     end
   end
 
   function StorageT.pin(self: *StorageT, ptr: Pointer(name, T)): Pointer(name, T) <inline>
-    check(ptr.id < #self.data - 1, "invalid ptr!")
-    check(self.refs[ptr.id] > 0, "dead ptr!")
+    check(ptr < #self.data - 1, "invalid ptr!")
+    check(self.refs[ptr] > 0, "dead ptr!")
 
-    self.refs[ptr.id] = self.refs[ptr.id] + 1
-    return {
-      id = ptr.id
-    }
+    self.refs[ptr] = self.refs[ptr] + 1
+    return ptr
   end
 
   function StorageT.unpin(self: *StorageT, ptr: Pointer(name, T)): void <inline>
-    check(ptr.id < #self.data - 1, "invalid ptr!")
-    check(self.refs[ptr.id] > 0, "dead ptr!")
+    check(ptr < #self.data - 1, "invalid ptr!")
+    check(self.refs[ptr] > 0, "dead ptr!")
 
-    self.refs[ptr.id] = self.refs[ptr.id] - 1
-    if self.refs[ptr.id] == 0 then
-      self.free:push(ptr.id)
+    self.refs[ptr] = self.refs[ptr] - 1
+    if self.refs[ptr] == 0 then
+      self.free:push(ptr)
     end
   end
 
   function StorageT.__atindex(self: *StorageT, ptr: Pointer(name, T)): *T <inline>
-    check(ptr.id < #self.data, "invalid ptr!")
-    check(self.refs[ptr.id] > 0, "dead ptr!")
+    check(ptr < #self.data, "invalid ptr!")
+    check(self.refs[ptr] > 0, "dead ptr!")
 
-    return &self.data[ptr.id]
+    return &self.data[ptr]
   end
 
   function StorageT.__mnext(self: *StorageT, ctrl_var: isize): (boolean, isize, *T) <inline>
