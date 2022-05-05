@@ -15,6 +15,33 @@ local world: World
 -- register components
 World.r("positions", Vec2)
 World.r("velocities", Vec2)
+World.r("entropy_render_lights", usize)
+World.r("entropy_render_renderables", usize)
+World.r("entropy_render_meshes", usize)
+World.r("_a", usize)
+World.r("_b", usize)
+World.r("_c", usize)
+World.r("_d", usize)
+World.r("_e", usize)
+World.r("_f", usize)
+World.r("_g", usize)
+World.r("_h", usize)
+World.r("_i", usize)
+World.r("_j", usize)
+World.r("_k", usize)
+World.r("_l", usize)
+World.r("_m", usize)
+World.r("_n", usize)
+World.r("_o", usize)
+World.r("_p", usize)
+World.r("_r", usize)
+World.r("_s", usize)
+World.r("_t", usize)
+World.r("_v", usize)
+World.r("_w", usize)
+World.r("_x", usize)
+World.r("_y", usize)
+World.r("_z", usize)
 
 local Entity = @record{
   pos: P("positions", Vec2),
@@ -74,8 +101,23 @@ for i=0,<10000 do
 end
 print("Creation: ", (os.now() - now) * 1000000)
 
-now = os.now()
-for id, e in mpairs(entities) do
-  positions[e.pos] = positions[e.pos] + velocities[e.vel]
+require "vector"
+local times: vector(float64)
+
+for i=0,<10000 do
+  now = os.now()
+  for id, e in mpairs(entities) do
+    positions[e.pos] = positions[e.pos] + velocities[e.vel]
+  end
+  local time = os.now() - now
+  --print("Iteration: ", time * 1000000)
+  times:push(time)
 end
-print("Iteration: ", (os.now() - now) * 1000000)
+
+local avg: float64 = 0.0
+for _, time in ipairs(times) do
+  avg = avg + time
+end
+avg = avg / #times
+
+print("Avg Iteration: ", avg * 1000000)

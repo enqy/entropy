@@ -11,8 +11,8 @@ local Renderer: type = @record{
   },
 }
 
--- Create a renderer from a device
-function Renderer.create(device: WGPUDevice, target_format: WGPUTextureFormat, target_width: uint32, target_height: uint32): Renderer
+-- Inits a renderer
+function Renderer.init(device: WGPUDevice, target_format: WGPUTextureFormat, target_width: uint32, target_height: uint32): Renderer
   return {
     device = device,
     queue = wgpuDeviceGetQueue(device),
@@ -23,6 +23,12 @@ function Renderer.create(device: WGPUDevice, target_format: WGPUTextureFormat, t
       height = target_height,
     },
   }
+end
+
+function Renderer:prepare(): void
+end
+
+function Renderer:render(): void
 end
 
 return Renderer
