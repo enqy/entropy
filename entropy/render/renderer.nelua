@@ -1,7 +1,7 @@
 require "wgpu"
 
 ## local function make_RendererImplT(ImplT)
-  ## static_assert(ImplT.value.is_renderer_impl, "passed in type %s is not a renderer implementation!", ImplT.value)
+  ## static_assert(ImplT.is_renderer_impl, "passed in type %s is not a renderer implementation!", ImplT.value)
 
   local ImplT: type = #[ImplT]#
 
