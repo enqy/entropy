@@ -1,34 +1,41 @@
 require "wgpu"
 
-local Renderer: type = @record{
-  device: WGPUDevice,
-  queue: WGPUQueue,
+## local function make_RendererImplT(ImplT)
+  ## static_assert(ImplT.value.is_renderer_impl, "passed in type %s is not a renderer implementation!", ImplT.value)
 
-  target_config: record{
-    format: WGPUTextureFormat,
-    width: uint32,
-    height: uint32,
-  },
-}
+  local ImplT: type = #[ImplT]#
 
--- Inits a renderer
-function Renderer.init(device: WGPUDevice, target_format: WGPUTextureFormat, target_width: uint32, target_height: uint32): Renderer
-  return {
-    device = device,
-    queue = wgpuDeviceGetQueue(device),
+  local RendererImplT = @record{
+    impl: ImplT,
 
-    target_config = {
+    device: WGPUDevice,
+    queue: WGPUQueue,
+
+    target_config: record{
+      format: WGPUTextureFormat,
+      width: uint32,
+      height: uint32,
+    },
+  }
+
+  function RendererImplT:init(device: WGPUDevice, target_format: WGPUTextureFormat, target_width: uint32, target_height: uint32): void
+    self.device = device
+    self.queue = wgpuDeviceGetQueue(device)
+
+    self.target_config = {
       format = target_format,
       width = target_width,
       height = target_height,
-    },
-  }
-end
+    }
+  end
 
-function Renderer:prepare(): void
-end
+  function RendererImplT:prepare(): void
+  end
 
-function Renderer:render(): void
-end
+  function RendererImplT:render(): void
+  end
 
-return Renderer
+  ## return RendererImplT
+## end
+
+return #[generalize(make_RendererImplT)]#

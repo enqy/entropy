@@ -3,9 +3,8 @@ require "string"
 require "os"
 
 local World = require "entropy.world"
-require "entropy.world"
-local Storage = World.Storage
-local P = World.Pointer
+local Storage = require "entropy.world.storage"
+local P = require "entropy.world.pointer"
 local math = require "entropy.math"
 local Vec2 = math.Vec2
 local Quaternion = math.Quaternion
@@ -104,7 +103,7 @@ print("Creation: ", (os.now() - now) * 1000000)
 require "vector"
 local times: vector(float64)
 
-for i=0,<10000 do
+for i=0,<1000 do
   now = os.now()
   for id, e in mpairs(entities) do
     positions[e.pos] = positions[e.pos] + velocities[e.vel]
@@ -121,3 +120,9 @@ end
 avg = avg / #times
 
 print("Avg Iteration: ", avg * 1000000)
+
+-- renderer
+local Renderer = require "entropy.render.renderer"
+local BasicImpl = require "entropy.render.impl.basic"
+local renderer: Renderer(BasicImpl)
+print(renderer)

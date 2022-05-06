@@ -1,0 +1,4 @@
+local Impl: type = @record{}
+## Impl.value.is_renderer_impl = true
+
+return Impl
