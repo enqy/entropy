@@ -1,4 +1,3 @@
-local World = require "entropy.world"
 require "entropy.world"
 
 -- this is actually just usize but with some extra compile type checking on it

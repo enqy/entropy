@@ -3,9 +3,6 @@ require "string"
 local World: type = @record{}
 ## World.value.storages = {}
 
-local World.Storage = require "entropy.world.storage"
-local World.Pointer = require "entropy.world.pointer"
-
 -- Register a new component to be stored
 function World.r(name: string <comptime>, T: type): void <inline>
   ##[[
