@@ -125,4 +125,4 @@ print("Avg Iteration: ", avg * 1000000)
 local Renderer = require "entropy.render.renderer"
 local BasicImpl = require "entropy.render.impl.basic"
 local renderer: Renderer(BasicImpl)
-print(renderer)
+print(renderer.target_config.width)
