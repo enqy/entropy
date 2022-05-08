@@ -6,8 +6,9 @@ local World: type = @record{}
 -- Register a new component to be stored
 function World.r(name: string <comptime>, T: type): void <inline>
   ##[[
+  local sname = name.value:gsub("%.", "___")
   if World.value.storages[name.value] == nil then
-    World.value:add_field(name.value, make_StorageT(name.value, T.value).value)
+    World.value:add_field(sname, make_StorageT(name.value, T.value).value)
     World.value.storages[name.value] = T.value
   else
     static_error("storage %s already registered for type %s!", name.value, World.value.storages[name.value])
@@ -17,9 +18,10 @@ end
 
 -- get a reference to a storage
 function World:s(name: string <comptime>): auto <inline>
+  ## local sname = name.value:gsub("%.", "___")
   ## static_assert(World.value.storages[name.value] ~= nil, "storage %s is not registered for a type!", name.value)
 
-  return &self.#|name.value|#
+  return &self.#|sname|#
 end
 
 global function check_storage(name: string <comptime>, T: type): void <inline>
