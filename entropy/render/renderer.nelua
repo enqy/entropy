@@ -1,7 +1,9 @@
 require "wgpu"
 
+local World = require "entropy.world"
+
 ## local function make_RendererImplT(ImplT)
-  ## static_assert(ImplT.is_renderer_impl, "passed in type %s is not a renderer implementation!", ImplT.value)
+  ## static_assert(ImplT.is_renderer_impl, "passed in type %s is not a renderer implementation!", ImplT)
 
   local ImplT: type = #[ImplT]#
 
@@ -17,6 +19,7 @@ require "wgpu"
       height: uint32,
     },
   }
+  ## RendererImplT.value.is_renderer = true
 
   function RendererImplT:init(device: WGPUDevice, target_format: WGPUTextureFormat, target_width: uint32, target_height: uint32): void
     self.device = device
@@ -27,15 +30,54 @@ require "wgpu"
       width = target_width,
       height = target_height,
     }
+
+    self.impl:init(self)
   end
 
-  function RendererImplT:prepare(): void
+  function RendererImplT:cleanup(): void
+    self.impl:cleanup(self)
   end
 
-  function RendererImplT:render(): void
+  function RendererImplT:resize(width: uint32, height: uint32): void
+    self.impl:resize(self)
+  end
+
+  function RendererImplT:render(target: WGPUTextureView, world: *World): void
+    -- create command encoder
+    local encoder = wgpuDeviceCreateCommandEncoder(
+      self.device,
+      &(@WGPUCommandEncoderDescriptor){
+        label = nilptr,
+      }
+    )
+
+    -- call implementation render function
+    self.impl:render(self, encoder, target, world)
+
+    local cmd_buffer = wgpuCommandEncoderFinish(
+      encoder,
+      &(@WGPUCommandBufferDescriptor){
+        label = nilptr,
+      }
+    )
+
+    -- submit encoded commands to queue
+    wgpuQueueSubmit(self.queue, 1, &cmd_buffer)
   end
 
   ## return RendererImplT
 ## end
+
+-- concept to specialize for renderer
+global a_renderer = #[concept(function(attr)
+  local type = attr.type
+  if type.is_pointer then
+    type = type.subtype
+  end
+  if type.is_renderer then
+    return true
+  end
+  return false
+end)]#
 
 return #[generalize(make_RendererImplT)]#

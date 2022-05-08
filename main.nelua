@@ -5,18 +5,13 @@ require "os"
 local World = require "entropy.world"
 local Storage = require "entropy.world.storage"
 local P = require "entropy.world.pointer"
-local math = require "entropy.math"
-local Vec2 = math.Vec2
-local Quaternion = math.Quaternion
+local Vec2 = require "entropy.math.vec2"
 
 local world: World
 
 -- register components
 World.r("positions", Vec2)
 World.r("velocities", Vec2)
-World.r("entropy_render_lights", usize)
-World.r("entropy_render_renderables", usize)
-World.r("entropy_render_meshes", usize)
 World.r("_a", usize)
 World.r("_b", usize)
 World.r("_c", usize)
@@ -122,7 +117,36 @@ avg = avg / #times
 print("Avg Iteration: ", avg * 1000000)
 
 -- renderer
+require "wgpu"
+wgpuSetLogCallback(function(level: WGPULogLevel, msg: cstring): void
+  print(level .. ": " .. msg)
+end)
+wgpuSetLogLevel(WGPULogLevel_Info)
+
+local GLFWContext = require 'entropy.render.glfw_context'
 local Renderer = require "entropy.render.renderer"
 local BasicImpl = require "entropy.render.impl.basic"
+
+local context: GLFWContext
+context:init("testing", 512, 512, true)
+
 local renderer: Renderer(BasicImpl)
-print(renderer.target_config.width)
+renderer:init(context.device, context.format, context.width, context.height)
+
+-- setup resize callback
+context.user_pointer = &renderer
+context.resize_callback = function(user: pointer, width: uint32, height: uint32): void
+  local crenderer = (@*Renderer(BasicImpl))(user)
+  crenderer:resize(width, height)
+end
+
+while not context:should_close() do
+  local view = context:view()
+  renderer:render(view, &world)
+  context:present()
+
+  context:poll_events()
+end
+
+renderer:cleanup()
+context:cleanup()

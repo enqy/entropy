@@ -1,5 +1,61 @@
-local World = require "entropy.world"
+require "glfw"
+require "glfwnative"
+require "wgpu"
 
 local render: type = @record{}
+
+function render.request_adapter_device(surface: WGPUSurface): (WGPUAdapter, WGPUDevice)
+  -- request adapter, always high performance
+  -- TODO: test not forcing vulkan
+  local adapter: WGPUAdapter
+  wgpuInstanceRequestAdapter(
+    nilptr,
+    &(@WGPURequestAdapterOptions){
+      nextInChain = (@*WGPUChainedStruct)(&(@WGPUAdapterExtras){
+        chain = (@WGPUChainedStruct){
+          sType = WGPUSType_AdapterExtras,
+        },
+        backend = WGPUBackendType_Vulkan,
+      }),
+      powerPreference = WGPUPowerPreference_HighPerformance,
+      compatibleSurface = surface,
+    },
+    function (status: WGPURequestAdapterStatus, received: WGPUAdapter, message: cstring, userdata: pointer): void
+      $(@*WGPUAdapter)(userdata) = received
+    end,
+    &adapter
+  )
+
+  -- wait for adapter
+  while not adapter do end
+
+  -- request device
+  local device: WGPUDevice
+  wgpuAdapterRequestDevice(
+    adapter,
+    &(@WGPUDeviceDescriptor){
+      nextInChain = (@*WGPUChainedStruct)(&(@WGPUDeviceExtras){
+        chain = (@WGPUChainedStruct){
+          sType = WGPUSType_DeviceExtras,
+        },
+        label = "device",
+      }),
+      requiredLimits = &(@WGPURequiredLimits){
+        limits = (@WGPULimits){
+          maxBindGroups = 8,
+        },
+      },
+    },
+    function (status: WGPURequestDeviceStatus, received: WGPUDevice, message: cstring, userdata: pointer): void
+      $(@*WGPUDevice)(userdata) = received
+    end,
+    &device
+  )
+
+  -- wait for device
+  while not device do end
+
+  return adapter, device
+end
 
 return render

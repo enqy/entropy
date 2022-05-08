@@ -1,4 +1,163 @@
-local Impl: type = @record{}
+require "wgpu"
+
+local World = require "entropy.world"
+local Renderer = require "entropy.render.renderer"
+local Shader = require "entropy.render.shader"
+local Mat4 = require "entropy.math.mat4"
+
+local Globals: type = @record{
+  view_proj: Mat4,
+}
+
+local Impl: type = @record{
+  globals_buffer: WGPUBuffer,
+  globals_bind_group: WGPUBindGroup,
+
+  pipeline: WGPURenderPipeline,
+}
 ## Impl.value.is_renderer_impl = true
+
+function Impl:init(renderer: a_renderer): void
+  -- init global uniform
+  local globals_bind_group_layout = wgpuDeviceCreateBindGroupLayout(
+    renderer.device,
+    &(@WGPUBindGroupLayoutDescriptor){
+      label = "basic globals bind group layout",
+      entryCount = 1,
+      entries = &(@[]WGPUBindGroupLayoutEntry){
+        (@WGPUBindGroupLayoutEntry){
+          binding = 0,
+          visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment,
+          buffer = (@WGPUBufferBindingLayout){
+            type = WGPUBufferBindingType_Uniform,
+            hasDynamicOffset = false,
+            minBindingSize = #Globals,
+          },
+        },
+      },
+    }
+  )
+  local globals_buffer = wgpuDeviceCreateBuffer(
+    renderer.device,
+    &(@WGPUBufferDescriptor){
+      label = "basic globals buffer",
+      usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst,
+      size = #Globals,
+      mappedAtCreation = false,
+    }
+  )
+  local globals_bind_group = wgpuDeviceCreateBindGroup(
+    renderer.device,
+    &(@WGPUBindGroupDescriptor){
+      label = "basic globals bind group",
+      layout = globals_bind_group_layout,
+      entryCount = 1,
+      entries = &(@[]WGPUBindGroupEntry){
+        (@WGPUBindGroupEntry){
+          binding = 0,
+          buffer = globals_buffer,
+          size = #Globals,
+        },
+      },
+    }
+  )
+  self.globals_buffer = globals_buffer
+  self.globals_bind_group = globals_bind_group
+
+  -- load shaders
+  local shader = Shader.load_from_file("basic shader", "entropy/render/impl/basic/shader.wgsl")
+  shader:create(renderer.device)
+
+  -- setup pipelines
+  local pipeline_layout = wgpuDeviceCreatePipelineLayout(
+    renderer.device,
+    &(@WGPUPipelineLayoutDescriptor){
+      bindGroupLayoutCount = 1,
+      bindGroupLayouts = &(@[]WGPUBindGroupLayout){
+        globals_bind_group_layout
+      },
+    }
+  )
+  local pipeline = wgpuDeviceCreateRenderPipeline(
+    renderer.device,
+    &(@WGPURenderPipelineDescriptor){
+      label = "basic render pipeline",
+      layout = pipeline_layout,
+      vertex = (@WGPUVertexState){
+        module = shader.module,
+        entryPoint = "vs_main",
+      },
+      primitive = (@WGPUPrimitiveState){
+        topology = WGPUPrimitiveTopology_TriangleStrip,
+        stripIndexFormat = WGPUIndexFormat_Undefined,
+        frontFace = WGPUFrontFace_CCW,
+        cullMode = WGPUCullMode_None,
+      },
+      multisample = (@WGPUMultisampleState){
+        count = 1,
+        mask = 0xffffffff,
+        alphaToCoverageEnabled = false,
+      },
+      fragment = &(@WGPUFragmentState){
+        module = shader.module,
+        entryPoint = "fs_main",
+        targetCount = 1,
+        targets = &(@[]WGPUColorTargetState){
+          {
+            format = renderer.target_config.format,
+            blend = &(WGPUBlendState){
+              color = (@WGPUBlendComponent){
+                srcFactor = WGPUBlendFactor_One,
+                dstFactor = WGPUBlendFactor_OneMinusSrcAlpha,
+                operation = WGPUBlendOperation_Add,
+              },
+              alpha = (@WGPUBlendComponent){
+                srcFactor = WGPUBlendFactor_One,
+                dstFactor = WGPUBlendFactor_OneMinusSrcAlpha,
+                operation = WGPUBlendOperation_Add,
+              },
+            },
+            writeMask = WGPUColorWriteMask_All
+          },
+        },
+      },
+    }
+  )
+  self.pipeline = pipeline
+end
+
+function Impl:cleanup(renderer: a_renderer): void
+end
+
+function Impl:resize(renderer: a_renderer): void
+end
+
+function Impl:render(renderer: a_renderer, encoder: WGPUCommandEncoder, target: WGPUTextureView, world: *World): void
+  local pass = wgpuCommandEncoderBeginRenderPass(
+    encoder,
+    &(@WGPURenderPassDescriptor){
+      colorAttachmentCount = 1,
+      colorAttachments = &(@[]WGPURenderPassColorAttachment){
+        {
+          view = target,
+          loadOp = WGPULoadOp_Clear,
+          storeOp = WGPUStoreOp_Store,
+          clearValue = (@WGPUColor){
+            r = 0.0,
+            g = 0.0,
+            b = 0.0,
+            a = 1.0,
+          },
+        },
+      },
+    }
+  )
+
+  wgpuRenderPassEncoderSetPipeline(pass, self.pipeline)
+  wgpuRenderPassEncoderSetBindGroup(pass, 0, self.globals_bind_group, 0, nilptr)
+  wgpuRenderPassEncoderDraw(pass, 3, 1, 0, 0)
+
+  wgpuRenderPassEncoderEnd(pass)
+end
 
 return Impl

@@ -1,0 +1,33 @@
+require "filestream"
+
+require "wgpu"
+
+local Shader: type = @record{
+  descriptor: WGPUShaderModuleDescriptor,
+  module: WGPUShaderModule,
+}
+
+function Shader.load_from_file(name: string, path: string): Shader
+  local file = filestream.open(path, "rb")
+  file:seek("set", 0)
+
+  local wgsl_descriptor = default_allocator:new(@WGPUShaderModuleWGSLDescriptor)
+  wgsl_descriptor.chain.next = nilptr
+  wgsl_descriptor.chain.sType = WGPUSType_ShaderModuleWGSLDescriptor
+  wgsl_descriptor.code = file:read("a")
+
+  file:close()
+
+  return {
+    descriptor = (@WGPUShaderModuleDescriptor){
+      nextInChain = (@*WGPUChainedStruct)(wgsl_descriptor),
+      label = name,
+    },
+  }
+end
+
+function Shader:create(device: WGPUDevice): void
+  self.module = wgpuDeviceCreateShaderModule(device, self.descriptor)
+end
+
+return Shader

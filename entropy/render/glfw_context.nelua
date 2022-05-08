@@ -1,0 +1,139 @@
+require "glfw"
+require "glfwnative"
+require "wgpu"
+
+local render = require "entropy.render"
+
+local GLFWContext: type = @record{
+  width: uint32,
+  height: uint32,
+  vsync: boolean,
+
+  user_pointer: pointer,
+  resize_callback: function(pointer, uint32, uint32): void,
+
+  window: *GLFWwindow,
+  surface: WGPUSurface,
+
+  adapter: WGPUAdapter,
+  device: WGPUDevice,
+
+  format: WGPUTextureFormat,
+
+  swapchain: WGPUSwapChain,
+}
+
+function GLFWContext:create_swapchain(): void
+  local present_mode: WGPUPresentMode
+  if self.vsync then
+    present_mode = WGPUPresentMode_Fifo
+  else
+    present_mode = WGPUPresentMode_Immediate
+  end
+
+  self.swapchain = wgpuDeviceCreateSwapChain(
+    self.device,
+    self.surface,
+    &(@WGPUSwapChainDescriptor){
+      usage = WGPUTextureUsage_RenderAttachment,
+      format = self.format,
+      width = self.width,
+      height = self.height,
+      presentMode = present_mode,
+    }
+  )
+end
+
+function GLFWContext:resize(width: uint32, height: uint32): void
+  self.width = width
+  self.height = height
+  self:create_swapchain()
+end
+
+function GLFWContext:init(title: string, width: uint32, height: uint32, vsync: boolean): void
+  -- init glfw
+  glfwInit()
+
+  -- don't create an opengl context
+  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API)
+  -- create glfw window
+  self.window = glfwCreateWindow(width, height, title, nilptr, nilptr)
+  assert(self.window, "failed to create window!")
+  self.width = width
+  self.height = height
+
+  -- set user pointer to ourselves
+  glfwSetWindowUserPointer(self.window, self)
+
+  -- add resize callback
+  glfwSetWindowSizeCallback(self.window, function(window: *GLFWwindow, width: cint, height: cint): void
+    local cself = (@*GLFWContext)(glfwGetWindowUserPointer(window))
+    cself:resize(width, height)
+    if cself.resize_callback then
+      cself.resize_callback(cself.user_pointer, width, height)
+    end
+  end)
+
+  -- create webgpu surface for window
+  -- this part is platform dependent
+## if ccinfo.is_windows then
+  require "windows"
+  self.surface = wgpuInstanceCreateSurface(
+    nilptr,
+    &(@WGPUSurfaceDescriptor){
+      nextInChain = (@*WGPUChainedStruct)(&(@WGPUSurfaceDescriptorFromWindowsHWND){
+        chain = (@WGPUChainedStruct){
+          sType = WGPUSType_SurfaceDescriptorFromWindowsHWND,
+        },
+        hinstance = GetModuleHandleW(nilptr),
+        hwnd = glfwGetWin32Window(self.window),
+      }),
+    }
+  )
+## else
+  self.surface = wgpuInstanceCreateSurface(
+    nilptr,
+    &(@WGPUSurfaceDescriptor){
+      nextInChain = (@*WGPUChainedStruct)(&(@WGPUSurfaceDescriptorFromXlibWindow){
+        chain = (@WGPUChainedStruct){
+          sType = WGPUSType_SurfaceDescriptorFromXlibWindow,
+        },
+        display = glfwGetX11Display(),
+        window = glfwGetX11Window(self.window),
+      }),
+    }
+  )
+## end
+
+  -- request adapter and device
+  self.adapter, self.device = render.request_adapter_device(self.surface)
+
+  -- get surface format
+  self.format = wgpuSurfaceGetPreferredFormat(self.surface, self.adapter)
+
+  -- create initial swapchain
+  self.vsync = vsync
+  self:create_swapchain()
+end
+
+function GLFWContext:cleanup(): void
+  glfwTerminate()
+end
+
+function GLFWContext:view(): WGPUTextureView <inline>
+  return wgpuSwapChainGetCurrentTextureView(self.swapchain)
+end
+
+function GLFWContext:present(): void <inline>
+  wgpuSwapChainPresent(self.swapchain)
+end
+
+function GLFWContext:should_close(): boolean <inline>
+  return glfwWindowShouldClose(self.window) ~= 0
+end
+
+function GLFWContext:poll_events(): void <inline>
+  glfwPollEvents()
+end
+
+return GLFWContext

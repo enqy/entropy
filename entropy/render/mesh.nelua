@@ -1,0 +1,8 @@
+local World = require "entropy.world"
+
+local Mesh: type = @record{}
+
+-- register Mesh storage
+World.r("entropy.render.meshes", Mesh)
+
+return Mesh
