@@ -1,0 +1,22 @@
+require "math"
+
+local Vec4 = require "entropy.math.vec4"
+
+-- column major, float32
+local Mat4: type = @record{
+  x: Vec4,
+  y: Vec4,
+  z: Vec4,
+  w: Vec4,
+}
+
+-- column major, float64
+local DMat4: type = @record{
+  x: Vec4.D,
+  y: Vec4.D,
+  z: Vec4.D,
+  w: Vec4.D,
+}
+local Mat4.D = DMat4
+
+return Mat4

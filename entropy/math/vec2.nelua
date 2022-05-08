@@ -1,0 +1,51 @@
+require "math"
+
+## local function impl(T)
+function #|T|#.__eq(a: #|T|#, b: #|T|#): boolean
+  return (a.x == b.x) and (a.y == b.y)
+end
+
+function #|T|#.__add(a: #|T|#, b: #|T|#): #|T|#
+  return {
+    x = a.x + b.x,
+    y = a.y + b.y,
+  }
+end
+
+function #|T|#.__sub(a: #|T|#, b: #|T|#): #|T|#
+  return {
+    x = a.x - b.x,
+    y = a.y - b.y,
+  }
+end
+
+function #|T|#.__unm(a: #|T|#): #|T|#
+  return {
+    x = -a.x,
+    y = -a.y,
+  }
+end
+
+function #|T|#:__len(): number
+  return math.sqrt((self.x * self.x) + (self.y * self.y))
+end
+
+function #|T|#:__tostring(): string
+  return #[T]# .. "(" .. self.x .. ", " .. self.y .. ")"
+end
+## end
+
+local Vec2: type = @record{
+  x: float32,
+  y: float32,
+}
+## impl("Vec2")
+
+local DVec2: type = @record{
+  x: float64,
+  y: float64,
+}
+## impl("DVec2")
+local Vec2.D = DVec2
+
+return Vec2
