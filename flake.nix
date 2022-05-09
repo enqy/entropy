@@ -230,13 +230,13 @@
               nelua =
                 pkgs.stdenv.mkDerivation rec {
                   pname = "nelua";
-                  version = "7e02f26b84e4ebbd0966b876d960b9cda6583fa2";
+                  version = "a4a54c190027beccd8111f019e24e1440fecddb1";
 
                   src = pkgs.fetchFromGitHub {
                     owner = "edubart";
                     repo = "nelua-lang";
                     rev = version;
-                    sha256 = "sha256-h5fyOgP+dEUY+KTyan0acCaz0/GzQ/4ld60zK5+rIR0=";
+                    sha256 = "sha256-gql4VmpleEzQXyB2p41/6CXP4IFhLW1DZYLjUpaQn3s=";
                   };
 
                   patchPhase = ''
