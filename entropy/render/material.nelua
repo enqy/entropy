@@ -1,0 +1,8 @@
+local World = require "entropy.world"
+
+local Material: type = @record{}
+
+-- register storage for Material
+World.r("entropy.render.materials", Material)
+
+return Material

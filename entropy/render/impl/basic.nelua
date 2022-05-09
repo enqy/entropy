@@ -88,7 +88,7 @@ function Impl:init(renderer: a_renderer): void
         entryPoint = "vs_main",
       },
       primitive = (@WGPUPrimitiveState){
-        topology = WGPUPrimitiveTopology_TriangleStrip,
+        topology = WGPUPrimitiveTopology_TriangleList,
         stripIndexFormat = WGPUIndexFormat_Undefined,
         frontFace = WGPUFrontFace_CCW,
         cullMode = WGPUCullMode_None,
