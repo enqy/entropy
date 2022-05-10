@@ -2,9 +2,17 @@
   description = "entropy: A nix + nelua 3d/vr experience framework";
 
   inputs = {
+    # nixpkgs and other packages
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    nixpkgs-mozilla.url = "github:mozilla/nixpkgs-mozilla";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
+    };
 
+    # utils
     flake-utils = {
       url = "github:numtide/flake-utils";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -13,9 +21,27 @@
       url = "github:hercules-ci/gitignore.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # dependencies
+    nelua = {
+      url = "github:edubart/nelua-lang";
+      flake = false;
+    };
+    wgpu-native = {
+      url = "github:gfx-rs/wgpu-native";
+      flake = false;
+    };
+    webgpu-headers = {
+      url = "github:webgpu-native/webgpu-headers";
+      flake = false;
+    };
+    glfw = {
+      url = "github:glfw/glfw/3.3-stable";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-mozilla, flake-utils, gitignore }@inputs:
+  outputs = inputs@{ self, nixpkgs, rust-overlay, flake-utils, gitignore, ... }:
     let
       inherit (nixpkgs.lib) recursiveUpdate recurseIntoAttrs optional;
       inherit (flake-utils.lib) eachSystem flattenTree;
@@ -30,7 +56,7 @@
         let
           pkgs = import nixpkgs {
             inherit system;
-            overlays = [ nixpkgs-mozilla.overlay ];
+            overlays = [ (import rust-overlay) ];
           };
         in
         rec {
@@ -39,12 +65,12 @@
               linuxPkgs = import nixpkgs {
                 inherit system;
                 crossSystem = if (system != "x86_64-linux") then { config = "x86_64-linux"; } else null;
-                overlays = [ nixpkgs-mozilla.overlay ];
+                overlays = [ (import rust-overlay) ];
               };
               windowsPkgs = import nixpkgs {
                 inherit system;
                 crossSystem = { config = "x86_64-w64-mingw32"; };
-                overlays = [ nixpkgs-mozilla.overlay ];
+                overlays = [ (import rust-overlay) ];
               };
             in
             flattenTree rec {
@@ -118,14 +144,8 @@
                 let
                   baseDrv = {
                     pname = "glfw";
-                    version = "3.3.7";
-
-                    src = pkgs.fetchFromGitHub {
-                      owner = "glfw";
-                      repo = "GLFW";
-                      rev = baseDrv.version;
-                      sha256 = "sha256-aWwt6FRq/ofQmZAeavDa8inrJfrPxb8iyo1XYdQsrKc=";
-                    };
+                    version = inputs.glfw.rev;
+                    src = inputs.glfw;
 
                     nativeBuildInputs = with pkgs; [ cmake ];
 
@@ -162,7 +182,7 @@
                     buildInputs = with linuxPkgs; [ xorg.libX11 xorg.libXrandr xorg.libXinerama xorg.libXcursor xorg.libXi xorg.libXext ];
                   });
                   windows = windowsPkgs.stdenv.mkDerivation (recursiveUpdate baseDrv {
-                    # this is needed because zig looks for .lib files to link for when compiling for windows
+                    # this is needed because some compilers look for .lib files to link for when compiling for windows
                     postInstall = ''
                       ln -fs $out/lib/libglfw3dll.a $out/lib/glfw3.lib
                     '';
@@ -173,24 +193,26 @@
                 let
                   baseDrv = {
                     pname = "wgpu-native";
-                    version = "0.12.0.1";
+                    version = inputs.wgpu-native.rev;
+                    src = inputs.wgpu-native;
 
-                    src = pkgs.fetchFromGitHub {
-                      owner = "gfx-rs";
-                      repo = baseDrv.pname;
-                      rev = "v${baseDrv.version}";
-                      fetchSubmodules = true;
-                      sha256 = "sha256-6qcE8sKv2qhRTYN2qZQzRCosYD4rfsAicwLvDzh+c4Y=";
-                    };
-
-                    cargoSha256 = "sha256-ZU9gBgnwpjiLOt2b4AoxNXX4eQEoJP/O15fOjNRZXI4=";
+                    # TODO: update this whenever we update wgpu-native
+                    # also figure out a way to not require this
+                    cargoSha256 = "sha256-21oZ3nGFiuZeekeV+MsMGVkbpvJL/3MyqfUkzx4cn3Q=";
 
                     nativeBuildInputs = with pkgs; [
                       rustPlatform.bindgenHook
                     ];
 
-                    postInstall = ''
-                      mkdir $out/include
+                    # readd the headers cuz flakes doesn't fetch the submodule
+                    prePatch = ''
+                      mkdir -p ffi/webgpu-headers
+                      cp ${inputs.webgpu-headers}/webgpu.h ffi/webgpu-headers/webgpu.h
+                      cp ${inputs.wgpu-native}/ffi/wgpu.h ffi/wgpu.h
+                    '';
+
+                    preInstall = ''
+                      mkdir -p $out/include
 
                       cp ffi/webgpu-headers/webgpu.h $out/include
                       cp ffi/wgpu.h $out/include
@@ -199,27 +221,33 @@
                   };
                 in
                 recurseIntoAttrs {
-                  linux = linuxPkgs.rustPlatform.buildRustPackage (recursiveUpdate baseDrv { });
+                  linux =
+                    let
+                      rustToolchain = pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
+                        targets = [
+                          "x86_64-unknown-linux-gnu"
+                        ];
+                      };
+                      rustPlatform = linuxPkgs.makeRustPlatform {
+                        rustc = rustToolchain;
+                        cargo = rustToolchain;
+                      };
+                    in
+                    rustPlatform.buildRustPackage (recursiveUpdate baseDrv { });
                   windows =
                     let
-                      rustPlatform =
-                        let
-                          rustStable = (pkgs.rustChannelOf {
-                            channel = "1.60.0";
-                            sha256 = "sha256-otgm+7nEl94JG/B+TYhWseZsHV1voGcBsW/lOD2/68g=";
-                          }).rust.override {
-                            targets = [
-                              "x86_64-pc-windows-gnu"
-                            ];
-                          };
-                        in
-                        windowsPkgs.makeRustPlatform {
-                          rustc = rustStable;
-                          cargo = rustStable;
-                        };
+                      rustToolchain = windowsPkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
+                        targets = [
+                          "x86_64-pc-windows-gnu"
+                        ];
+                      };
+                      rustPlatform = windowsPkgs.makeRustPlatform {
+                        rustc = rustToolchain;
+                        cargo = rustToolchain;
+                      };
                     in
                     rustPlatform.buildRustPackage (recursiveUpdate baseDrv {
-                      # this is needed because zig looks for .lib files to link for when compiling for windows
+                      # this is needed because some compilers look for .lib files to link for when compiling for windows
                       postInstall = ''
                         ln -fs $out/lib/libwgpu_native.dll.a $out/lib/wgpu_native.lib
                       '';
@@ -230,14 +258,8 @@
               nelua =
                 pkgs.stdenv.mkDerivation rec {
                   pname = "nelua";
-                  version = "a4a54c190027beccd8111f019e24e1440fecddb1";
-
-                  src = pkgs.fetchFromGitHub {
-                    owner = "edubart";
-                    repo = "nelua-lang";
-                    rev = version;
-                    sha256 = "sha256-gql4VmpleEzQXyB2p41/6CXP4IFhLW1DZYLjUpaQn3s=";
-                  };
+                  version = inputs.nelua.rev;
+                  src = inputs.nelua;
 
                   patchPhase = ''
                     # patch out hardcoded CC

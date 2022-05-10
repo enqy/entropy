@@ -35,6 +35,39 @@
         "type": "github"
       }
     },
+    "glfw": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1649181249,
+        "narHash": "sha256-iKvPHbQVeMTfphvaTQTh5H0+b4caX396Te0fbMQV8WY=",
+        "owner": "glfw",
+        "repo": "glfw",
+        "rev": "b43c122dd194d74996d76c574a46d4bc23d6c7b0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "glfw",
+        "ref": "3.3-stable",
+        "repo": "glfw",
+        "type": "github"
+      }
+    },
+    "nelua": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1652035765,
+        "narHash": "sha256-gql4VmpleEzQXyB2p41/6CXP4IFhLW1DZYLjUpaQn3s=",
+        "owner": "edubart",
+        "repo": "nelua-lang",
+        "rev": "a4a54c190027beccd8111f019e24e1440fecddb1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "edubart",
+        "repo": "nelua-lang",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1651007983,
@@ -51,27 +84,71 @@
         "type": "github"
       }
     },
-    "nixpkgs-mozilla": {
-      "locked": {
-        "lastModified": 1650459918,
-        "narHash": "sha256-sroCK+QJTmoXtcRkwZyKOP9iAYOPID2Bwdxn4GkG16w=",
-        "owner": "mozilla",
-        "repo": "nixpkgs-mozilla",
-        "rev": "e1f7540fc0a8b989fb8cf701dc4fd7fc76bcf168",
-        "type": "github"
-      },
-      "original": {
-        "owner": "mozilla",
-        "repo": "nixpkgs-mozilla",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
         "flake-utils": "flake-utils",
         "gitignore": "gitignore",
+        "glfw": "glfw",
+        "nelua": "nelua",
         "nixpkgs": "nixpkgs",
-        "nixpkgs-mozilla": "nixpkgs-mozilla"
+        "rust-overlay": "rust-overlay",
+        "webgpu-headers": "webgpu-headers",
+        "wgpu-native": "wgpu-native"
+      }
+    },
+    "rust-overlay": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1652064227,
+        "narHash": "sha256-ZpIfELJNVzcxa6+YUr1KfbpTkHh02FASdlHaCC5/Q6w=",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "31db726b18ad2620fead6e7cd31b6e57d1cd061b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "webgpu-headers": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1647935054,
+        "narHash": "sha256-h9LW+1bXH1bmY0jiHi6wyQOBjCHfgUt9aIJL4G3HE6U=",
+        "owner": "webgpu-native",
+        "repo": "webgpu-headers",
+        "rev": "b46ca3c39249c537b2b421a37cf06b0d20bbf2c1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "webgpu-native",
+        "repo": "webgpu-headers",
+        "type": "github"
+      }
+    },
+    "wgpu-native": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1652040666,
+        "narHash": "sha256-K0pq3MKsQNYh4d5U+X6dTSlW/5sbdCHvTJKy/vIwBMo=",
+        "owner": "gfx-rs",
+        "repo": "wgpu-native",
+        "rev": "3a6d1d9a0954973a31160141d71974b2c9deab30",
+        "type": "github"
+      },
+      "original": {
+        "owner": "gfx-rs",
+        "repo": "wgpu-native",
+        "type": "github"
       }
     }
   },
