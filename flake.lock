@@ -2,11 +2,11 @@
   "nodes": {
     "flake-utils": {
       "locked": {
-        "lastModified": 1649676176,
-        "narHash": "sha256-OWKJratjt2RW151VUlJPRALb7OU2S5s+f0vLj4o1bHM=",
+        "lastModified": 1652776076,
+        "narHash": "sha256-gzTw/v1vj4dOVbpBSJX4J0DwUR6LIyXo7/SuuTJp1kM=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "a4b154ebbdc88c8498a5c7b01589addc9e9cb678",
+        "rev": "04c1b180862888302ddfb2e3ad9eaa63afc60cf8",
         "type": "github"
       },
       "original": {
@@ -55,11 +55,11 @@
     "nelua": {
       "flake": false,
       "locked": {
-        "lastModified": 1652204438,
-        "narHash": "sha256-aNzC4HpVkK/QOhYGdAH5a0PmtNSVC0RfL1Vub9Us7Cs=",
+        "lastModified": 1653313767,
+        "narHash": "sha256-fwJ4LAm/A3LsQJS334d4MRkrhs0TJYffx1ZSOip3hH8=",
         "owner": "edubart",
         "repo": "nelua-lang",
-        "rev": "8c074d34d30b7759347790b8044d2b203e8dfca4",
+        "rev": "0b29e349adc282dcfe82479ba5b647d202a7f000",
         "type": "github"
       },
       "original": {
@@ -70,11 +70,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1652172129,
-        "narHash": "sha256-8e2JMrswaKe02P8rYfvIMoc59pNuw6h/GYu8DBE1c+0=",
+        "lastModified": 1653060744,
+        "narHash": "sha256-kfRusllRumpt33J1hPV+CeCCylCXEU7e0gn2/cIM7cY=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "f419dc5763c2b3c5580e396dea065b6d8b58ee27",
+        "rev": "dfd82985c273aac6eced03625f454b334daae2e8",
         "type": "github"
       },
       "original": {
@@ -105,11 +105,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1652236937,
-        "narHash": "sha256-anMSkIvaxB3jV74nTvPcE8fH7bZ5LPuc2wXGvt50Oe0=",
+        "lastModified": 1653273659,
+        "narHash": "sha256-dHXYaNL1axhZZyiZXxt1WKhvZrYXq7bjCs3y5VjgyGI=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "18c816d2d10317f4a8816925a12cb4bbdd0821de",
+        "rev": "0fa3e01da1ce98e3b40063b8e2678095943402b1",
         "type": "github"
       },
       "original": {
@@ -123,7 +123,7 @@
       "locked": {
         "lastModified": 1652040666,
         "narHash": "sha256-0oSTpWKAz40C8++ZCYhU1gb0uZ81/i7bA0VmjHR5sv0=",
-        "ref": "master",
+        "ref": "refs/heads/master",
         "rev": "3a6d1d9a0954973a31160141d71974b2c9deab30",
         "revCount": 614,
         "submodules": true,
