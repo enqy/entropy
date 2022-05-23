@@ -92,7 +92,6 @@
         "nelua": "nelua",
         "nixpkgs": "nixpkgs",
         "rust-overlay": "rust-overlay",
-        "webgpu-headers": "webgpu-headers",
         "wgpu-native": "wgpu-native"
       }
     },
@@ -119,36 +118,22 @@
         "type": "github"
       }
     },
-    "webgpu-headers": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1647935054,
-        "narHash": "sha256-h9LW+1bXH1bmY0jiHi6wyQOBjCHfgUt9aIJL4G3HE6U=",
-        "owner": "webgpu-native",
-        "repo": "webgpu-headers",
-        "rev": "b46ca3c39249c537b2b421a37cf06b0d20bbf2c1",
-        "type": "github"
-      },
-      "original": {
-        "owner": "webgpu-native",
-        "repo": "webgpu-headers",
-        "type": "github"
-      }
-    },
     "wgpu-native": {
       "flake": false,
       "locked": {
         "lastModified": 1652040666,
-        "narHash": "sha256-K0pq3MKsQNYh4d5U+X6dTSlW/5sbdCHvTJKy/vIwBMo=",
-        "owner": "gfx-rs",
-        "repo": "wgpu-native",
+        "narHash": "sha256-0oSTpWKAz40C8++ZCYhU1gb0uZ81/i7bA0VmjHR5sv0=",
+        "ref": "master",
         "rev": "3a6d1d9a0954973a31160141d71974b2c9deab30",
-        "type": "github"
+        "revCount": 614,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/gfx-rs/wgpu-native"
       },
       "original": {
-        "owner": "gfx-rs",
-        "repo": "wgpu-native",
-        "type": "github"
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/gfx-rs/wgpu-native"
       }
     }
   },

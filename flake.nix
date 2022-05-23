@@ -28,11 +28,7 @@
       flake = false;
     };
     wgpu-native = {
-      url = "github:gfx-rs/wgpu-native";
-      flake = false;
-    };
-    webgpu-headers = {
-      url = "github:webgpu-native/webgpu-headers";
+      url = "git+https://github.com/gfx-rs/wgpu-native?submodules=1";
       flake = false;
     };
     glfw = {
@@ -203,13 +199,6 @@
                     nativeBuildInputs = with pkgs; [
                       rustPlatform.bindgenHook
                     ];
-
-                    # readd the headers cuz flakes doesn't fetch the submodule
-                    prePatch = ''
-                      mkdir -p ffi/webgpu-headers
-                      cp ${inputs.webgpu-headers}/webgpu.h ffi/webgpu-headers/webgpu.h
-                      cp ${inputs.wgpu-native}/ffi/wgpu.h ffi/wgpu.h
-                    '';
 
                     preInstall = ''
                       mkdir -p $out/include
