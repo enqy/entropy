@@ -8,7 +8,6 @@ local P = require "entropy.world.pointer"
 local Vec2 = require "entropy.math.vec2"
 
 local world: World
---[[
 -- register components
 World.r("positions", Vec2)
 World.r("velocities", Vec2)
@@ -115,7 +114,6 @@ end
 avg = avg / #times
 
 print("Avg Iteration: ", avg * 1000000)
-]]
 
 -- renderer
 require "wgpu"
