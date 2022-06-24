@@ -194,7 +194,7 @@
 
                     # TODO: update this whenever we update wgpu-native
                     # also figure out a way to not require this
-                    cargoSha256 = "sha256-21oZ3nGFiuZeekeV+MsMGVkbpvJL/3MyqfUkzx4cn3Q=";
+                    cargoSha256 = "sha256-RnmqzXhV0k0FfD+JEJeE2D9755GKLb6YM6UVXOkkdl4=";
 
                     nativeBuildInputs = with pkgs; [
                       rustPlatform.bindgenHook
