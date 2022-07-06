@@ -21,6 +21,13 @@
       url = "github:hercules-ci/gitignore.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    crane = {
+      url = "github:ipetkov/crane";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
+    };
 
     # dependencies
     nelua = {
@@ -37,7 +44,7 @@
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, rust-overlay, flake-utils, gitignore, ... }:
+  outputs = inputs@{ self, nixpkgs, rust-overlay, flake-utils, gitignore, crane, ... }:
     let
       inherit (nixpkgs.lib) recursiveUpdate recurseIntoAttrs optional;
       inherit (flake-utils.lib) eachSystem flattenTree;
@@ -192,10 +199,6 @@
                     version = inputs.wgpu-native.rev;
                     src = inputs.wgpu-native;
 
-                    # TODO: update this whenever we update wgpu-native
-                    # also figure out a way to not require this
-                    cargoSha256 = "sha256-RnmqzXhV0k0FfD+JEJeE2D9755GKLb6YM6UVXOkkdl4=";
-
                     nativeBuildInputs = with pkgs; [
                       rustPlatform.bindgenHook
                     ];
@@ -203,8 +206,8 @@
                     preInstall = ''
                       mkdir -p $out/include
 
-                      cp ffi/webgpu-headers/webgpu.h $out/include
-                      cp ffi/wgpu.h $out/include
+                      cp ${inputs.wgpu-native}/ffi/webgpu-headers/webgpu.h $out/include
+                      cp ${inputs.wgpu-native}/ffi/wgpu.h $out/include
                       sed -i -e 's/#include "webgpu-headers.*/#include <webgpu.h>/' $out/include/wgpu.h
                     '';
                   };
@@ -221,8 +224,9 @@
                         rustc = rustToolchain;
                         cargo = rustToolchain;
                       };
+                      craneLib = (crane.mkLib linuxPkgs).overrideToolchain rustToolchain;
                     in
-                    rustPlatform.buildRustPackage (recursiveUpdate baseDrv { });
+                    craneLib.buildPackage (recursiveUpdate baseDrv { });
                   windows =
                     let
                       rustToolchain = windowsPkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
@@ -234,11 +238,12 @@
                         rustc = rustToolchain;
                         cargo = rustToolchain;
                       };
+                      craneLib = (crane.mkLib windowsPkgs).overrideToolchain rustToolchain;
                     in
-                    rustPlatform.buildRustPackage (recursiveUpdate baseDrv {
+                    craneLib.buildPackage (recursiveUpdate baseDrv {
                       # this is needed because some compilers look for .lib files to link for when compiling for windows
                       postInstall = ''
-                        ln -fs $out/lib/libwgpu_native.dll.a $out/lib/wgpu_native.lib
+                        ln -fs $out/lib/libwgpu_native.a $out/lib/wgpu_native.lib
                       '';
                     });
                 };
