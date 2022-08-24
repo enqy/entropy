@@ -38,7 +38,6 @@ function render.request_adapter_device(surface: WGPUSurface): (WGPUAdapter, WGPU
         chain = (@WGPUChainedStruct){
           sType = WGPUSType_DeviceExtras,
         },
-        label = "device",
       }),
       requiredLimits = &(@WGPURequiredLimits){
         limits = (@WGPULimits){
