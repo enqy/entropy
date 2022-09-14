@@ -111,7 +111,7 @@
 
                     installPhase = ''
                       mkdir -p $out/bin
-                      nelua --cc $CC main.nelua -o $out/bin/game
+                      nelua --cc $CC --release main.nelua -o $out/bin/game
 
                       runHook postInstall
                     '';
