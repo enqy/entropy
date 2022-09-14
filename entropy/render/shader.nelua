@@ -30,4 +30,8 @@ function Shader:create(device: WGPUDevice): void
   self.module = wgpuDeviceCreateShaderModule(device, self.descriptor)
 end
 
+function Shader:cleanup(): void
+  wgpuShaderModuleDrop(self.module)
+end
+
 return Shader

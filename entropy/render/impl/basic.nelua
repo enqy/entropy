@@ -127,6 +127,7 @@ function Impl:init(renderer: a_renderer): void
 end
 
 function Impl:cleanup(renderer: a_renderer): void
+  wgpuRenderPipelineDrop(self.pipeline)
 end
 
 function Impl:resize(renderer: a_renderer): void
