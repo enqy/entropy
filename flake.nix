@@ -138,7 +138,7 @@
 
                     postInstall = ''
                       cp ${glfw.windows}/bin/glfw3.dll $out/bin
-                      cp ${wgpu-native.windows}/bin/wgpu_native.dll $out/bin
+                      cp ${wgpu-native.windows}/lib/wgpu_native.dll $out/bin
                     '';
                   });
                 };
@@ -148,7 +148,7 @@
                 let
                   baseDrv = {
                     pname = "glfw";
-                    version = inputs.glfw.rev;
+                    version = inputs.glfw.shortRev;
                     src = inputs.glfw;
 
                     nativeBuildInputs = with pkgs; [ cmake ];
@@ -197,7 +197,7 @@
                 let
                   baseDrv = {
                     pname = "wgpu-native";
-                    version = inputs.wgpu-native.rev;
+                    version = inputs.wgpu-native.shortRev;
                     src = inputs.wgpu-native;
 
                     nativeBuildInputs = with pkgs; [
@@ -242,10 +242,9 @@
                       craneLib = (crane.mkLib windowsPkgs).overrideToolchain rustToolchain;
                     in
                     craneLib.buildPackage (recursiveUpdate baseDrv {
-                      # this is needed because some compilers look for .lib files to link for when compiling for windows
-                      postInstall = ''
-                        ln -fs $out/lib/libwgpu_native.a $out/lib/wgpu_native.lib
-                      '';
+                      CARGO_BUILD_TARGET = "x86_64-pc-windows-gnu";
+
+                      buildInputs = with windowsPkgs; [ stdenv.cc windows.pthreads ];
                     });
                 };
 
@@ -253,7 +252,7 @@
               nelua =
                 pkgs.stdenv.mkDerivation rec {
                   pname = "nelua";
-                  version = inputs.nelua.rev;
+                  version = inputs.nelua.shortRev;
                   src = inputs.nelua;
 
                   patchPhase = ''
