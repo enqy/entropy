@@ -64,10 +64,17 @@
         rec {
           packages =
             let
-              linuxPkgs = import nixpkgs {
-                inherit system;
-                crossSystem = if (system != "x86_64-linux") then { config = "x86_64-linux"; } else null;
-                overlays = [ (import rust-overlay) ];
+              linuxPkgs = {
+                x86_64 = import nixpkgs {
+                  inherit system;
+                  crossSystem = if (system != "x86_64-linux") then { config = "x86_64-linux"; } else null;
+                  overlays = [ (import rust-overlay) ];
+                };
+                aarch64 = import nixpkgs {
+                  inherit system;
+                  crossSystem = if (system != "aarch64-linux") then { config = "aarch64-linux"; } else null;
+                  overlays = [ (import rust-overlay) ];
+                };
               };
               windowsPkgs = import nixpkgs {
                 inherit system;
@@ -120,15 +127,26 @@
                   };
                 in
                 recurseIntoAttrs {
-                  linux = linuxPkgs.stdenv.mkDerivation (recursiveUpdate (baseDrv [ ]) {
-                    buildInputs = with linuxPkgs; [
-                      xorg.libX11
-                      xorg.libXrandr
-                    ] ++ [
-                      glfw.linux
-                      wgpu-native.linux
-                    ];
-                  });
+                  linux = recurseIntoAttrs {
+                    x86_64 = linuxPkgs.x86_64.stdenv.mkDerivation (recursiveUpdate (baseDrv [ ]) {
+                      buildInputs = with linuxPkgs.x86_64; [
+                        xorg.libX11
+                        xorg.libXrandr
+                      ] ++ [
+                        glfw.linux.x86_64
+                        wgpu-native.linux.x86_64
+                      ];
+                    });
+                    aarch64 = linuxPkgs.aarch64.stdenv.mkDerivation (recursiveUpdate (baseDrv [ ]) {
+                      buildInputs = with linuxPkgs.aarch64; [
+                        xorg.libX11
+                        xorg.libXrandr
+                      ] ++ [
+                        glfw.linux.aarch64
+                        wgpu-native.linux.aarch64
+                      ];
+                    });
+                  };
                   windows = windowsPkgs.stdenv.mkDerivation (recursiveUpdate (baseDrv [ windows-nelua ]) {
                     buildInputs = with windowsPkgs; [
                     ] ++ [
@@ -157,40 +175,15 @@
                   };
                 in
                 recurseIntoAttrs {
-                  linux = linuxPkgs.stdenv.mkDerivation (recursiveUpdate baseDrv {
-                    patches =
-                      let
-                        x11_patch = pkgs.writeText "x11.patch" ''
-                          diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-                          index a0be580e..ba143851 100644
-                          --- a/src/CMakeLists.txt
-                          +++ b/src/CMakeLists.txt
-                          @@ -219,6 +219,13 @@ if (GLFW_BUILD_X11)
-                               if (NOT X11_Xshape_INCLUDE_PATH)
-                                   message(FATAL_ERROR "X Shape headers not found; install libxext development package")
-                               endif()
-                          +
-                          +    target_link_libraries(glfw PRIVATE ''\${X11_Xrandr_LIB}
-                          +                                       ''\${X11_Xinerama_LIB}
-                          +                                       ''\${X11_Xkb_LIB}
-                          +                                       ''\${X11_Xcursor_LIB}
-                          +                                       ''\${X11_Xi_LIB}
-                          +                                       ''\${X11_Xshape_LIB})
-                           endif()
-
-                           if (UNIX AND NOT APPLE)
-                        '';
-                      in
-                      [ x11_patch ];
-
-                    buildInputs = with linuxPkgs; [ xorg.libX11 xorg.libXrandr xorg.libXinerama xorg.libXcursor xorg.libXi xorg.libXext ];
-                  });
-                  windows = windowsPkgs.stdenv.mkDerivation (recursiveUpdate baseDrv {
-                    # this is needed because some compilers look for .lib files to link for when compiling for windows
-                    postInstall = ''
-                      ln -fs $out/lib/libglfw3dll.a $out/lib/glfw3.lib
-                    '';
-                  });
+                  linux = recurseIntoAttrs {
+                    x86_64 = linuxPkgs.x86_64.stdenv.mkDerivation (recursiveUpdate baseDrv {
+                      buildInputs = with linuxPkgs.x86_64; [ xorg.libX11 xorg.libXrandr xorg.libXinerama xorg.libXcursor xorg.libXi xorg.libXext ];
+                    });
+                    aarch64 = linuxPkgs.aarch64.stdenv.mkDerivation (recursiveUpdate baseDrv {
+                      buildInputs = with linuxPkgs.aarch64; [ xorg.libX11 xorg.libXrandr xorg.libXinerama xorg.libXcursor xorg.libXi xorg.libXext ];
+                    });
+                  };
+                  windows = windowsPkgs.stdenv.mkDerivation (recursiveUpdate baseDrv { });
                 };
 
               wgpu-native =
@@ -214,20 +207,36 @@
                   };
                 in
                 recurseIntoAttrs {
-                  linux =
-                    let
-                      rustToolchain = pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
-                        targets = [
-                          "x86_64-unknown-linux-gnu"
-                        ];
-                      };
-                      rustPlatform = linuxPkgs.makeRustPlatform {
-                        rustc = rustToolchain;
-                        cargo = rustToolchain;
-                      };
-                      craneLib = (crane.mkLib linuxPkgs).overrideToolchain rustToolchain;
-                    in
-                    craneLib.buildPackage (recursiveUpdate baseDrv { });
+                  linux = recurseIntoAttrs {
+                    x86_64 =
+                      let
+                        rustToolchain = pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
+                          targets = [
+                            "x86_64-unknown-linux-gnu"
+                          ];
+                        };
+                        rustPlatform = linuxPkgs.x86_64.makeRustPlatform {
+                          rustc = rustToolchain;
+                          cargo = rustToolchain;
+                        };
+                        craneLib = (crane.mkLib linuxPkgs.x86_64).overrideToolchain rustToolchain;
+                      in
+                      craneLib.buildPackage (recursiveUpdate baseDrv { });
+                    aarch64 =
+                      let
+                        rustToolchain = pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
+                          targets = [
+                            "aarch64-unknown-linux-gnu"
+                          ];
+                        };
+                        rustPlatform = linuxPkgs.aarch64.makeRustPlatform {
+                          rustc = rustToolchain;
+                          cargo = rustToolchain;
+                        };
+                        craneLib = (crane.mkLib linuxPkgs.aarch64).overrideToolchain rustToolchain;
+                      in
+                      craneLib.buildPackage (recursiveUpdate baseDrv { });
+                  };
                   windows =
                     let
                       rustToolchain = windowsPkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
@@ -371,7 +380,7 @@
                   '';
                 in
                 pkgs.runCommandCC "wgpu-nelua" { } ''
-                  cp ${wgpu-native.linux}/include/*.h .
+                  cp ${wgpu-native.linux.x86_64}/include/*.h .
                   cp ${wgpu_lua} wgpu.lua
                   cp ${wgpu_c} wgpu.c
 
@@ -411,8 +420,8 @@
                     wine64
                   ] ++ [
                     packages.nelua
-                    packages."glfw/linux"
-                    packages."wgpu-native/linux"
+                    packages."glfw/linux/x86_64"
+                    packages."wgpu-native/linux/x86_64"
                   ];
 
                 LD_LIBRARY_PATH = [ "${pkgs.vulkan-loader}/lib" ];
