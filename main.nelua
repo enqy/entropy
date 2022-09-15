@@ -11,30 +11,16 @@ local world: World
 -- register components
 World.r("positions", Vec2)
 World.r("velocities", Vec2)
-World.r("_a", usize)
-World.r("_b", usize)
-World.r("_c", usize)
-World.r("_d", usize)
-World.r("_e", usize)
-World.r("_f", usize)
-World.r("_g", usize)
-World.r("_h", usize)
-World.r("_i", usize)
-World.r("_j", usize)
-World.r("_k", usize)
-World.r("_l", usize)
-World.r("_m", usize)
-World.r("_n", usize)
-World.r("_o", usize)
-World.r("_p", usize)
-World.r("_r", usize)
-World.r("_s", usize)
-World.r("_t", usize)
-World.r("_v", usize)
-World.r("_w", usize)
-World.r("_x", usize)
-World.r("_y", usize)
-World.r("_z", usize)
+##[[
+function unroll(count, block)
+  for i=1,count do
+    block(i)
+  end
+end
+]]
+## unroll(10, function(i)
+  World.r(#["_" .. tostring(i)]#, usize)
+## end)
 
 local Entity = @record{
   pos: P("positions", Vec2),
