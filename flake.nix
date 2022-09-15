@@ -110,6 +110,8 @@
                     CFLAGS = builtins.map (module: "-I${module}/include") (nelua_modules ++ extraModules);
 
                     installPhase = ''
+                      runHook preInstall
+
                       mkdir -p $out/bin
                       nelua --cc $CC --release main.nelua -o $out/bin/game
 
