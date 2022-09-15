@@ -124,6 +124,9 @@ function Impl:init(renderer: a_renderer): void
     }
   )
   self.pipeline = pipeline
+
+  -- drop shader
+  shader:cleanup()
 end
 
 function Impl:cleanup(renderer: a_renderer): void

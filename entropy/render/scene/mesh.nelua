@@ -1,0 +1,10 @@
+local World = require "entropy.world"
+local Vec3 = require "entropy.math.vec3"
+
+local Mesh: type = @record{
+}
+
+-- register storage for Mesh
+World.r("entropy.render.scene.meshes", Mesh)
+
+return Mesh

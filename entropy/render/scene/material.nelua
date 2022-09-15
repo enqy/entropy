@@ -1,0 +1,13 @@
+local World = require "entropy.world"
+local Vec3 = require "entropy.math.vec3"
+
+local Material: type = @record{
+  albedo: Vec3,
+  roughness: float32,
+  metallic: float32,
+}
+
+-- register storage for Material
+World.r("entropy.render.scene.materials", Material)
+
+return Material

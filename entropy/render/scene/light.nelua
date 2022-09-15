@@ -1,0 +1,13 @@
+local World = require "entropy.world"
+local Vec3 = require "entropy.math.vec3"
+
+local Light: type = @record{
+  pos: Vec3,
+  color: Vec3,
+  intensity: float32,
+}
+
+-- register storage for Light
+World.r("entropy.render.scene.lights", Light)
+
+return Light
