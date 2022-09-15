@@ -1,6 +1,6 @@
 require "vector"
 
--- there is a workaround here to get the compiler to generate valud c code by manually creating methods with . instead of :
+-- there is a workaround here to get the compiler to generate valid c code by manually creating methods with . instead of :
 ## function make_StorageT(name, T)
   ## static_assert(traits.is_type(T), "invalid type '%s'", T)
   local T: type = @#[T]#
