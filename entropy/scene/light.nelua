@@ -8,6 +8,6 @@ local Light: type = @record{
 }
 
 -- register storage for Light
-World.r("entropy.render.scene.lights", Light)
+World.r("entropy.scene.lights", Light)
 
 return Light

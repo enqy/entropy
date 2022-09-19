@@ -6,6 +6,7 @@ local World = require "entropy.world"
 local Storage = require "entropy.world.storage"
 local P = require "entropy.world.pointer"
 local Vec2 = require "entropy.math.vec2"
+local Mat4 = require "entropy.math.mat4"
 
 local world: World
 -- register components
@@ -89,7 +90,7 @@ for i=0,<1000 do
     positions[e.pos] = positions[e.pos] + velocities[e.vel]
   end
   local time = os.now() - now
-  --print("Iteration: ", time * 1000000)
+
   times:push(time)
 end
 
@@ -101,19 +102,30 @@ avg = avg / #times
 
 print("Avg Iteration: ", avg * 1000000)
 
+-- math
+local a = Mat4.identity()
+local b = Mat4.identity()
+b.x.x = 2
+b.y.x = 2
+b.y.y = 2
+local c = a * b
+print(c)
+
 -- renderer
 require "wgpu"
 wgpuSetLogCallback((@WGPULogCallback)(function(level: WGPULogLevel, msg: cstring, ptr: pointer): void
-  print(level .. ": " .. msg)
+  print("WGPU" .. level .. ": " .. msg)
 end))
 wgpuSetLogLevel(WGPULogLevel_Info)
 
 local GLFWContext = require 'entropy.render.glfw_context'
 local Renderer = require "entropy.render.renderer"
 local BasicImpl = require "entropy.render.impl.basic"
+local Camera = require "entropy.scene.camera"
+local Mesh = require "entropy.scene.mesh"
 
 local context: GLFWContext
-context:init("testing", 512, 512, true)
+context:init("testing", 512, 512, false)
 
 local renderer: Renderer(BasicImpl)
 renderer:init(context.device, context.format, context.width, context.height)
@@ -125,12 +137,37 @@ context.resize_callback = function(user: pointer, width: uint32, height: uint32)
   crenderer:resize(width, height)
 end
 
+-- setup camera
+local cameras = world:s("entropy.scene.cameras")
+local camera_idx = cameras:create({
+  pos = { 0, 0, 0 },
+  rot = { 0, 0, 0 },
+
+  fov = 90,
+
+  z_near = 0.1,
+  z_far = 100,
+})
+cameras[camera_idx]:look_at({ 0, 0, 0 })
+
+-- load mesh
+local meshes = world:s("entropy.scene.meshes")
+local mesh_idx = meshes:create(Mesh.load_from_obj("./teapot.obj"))
+meshes[mesh_idx]:prepare(renderer)
+meshes[mesh_idx].transform = Mat4.identity()
+
 while not context:should_close() do
+  -- get input
+  context:poll_events()
+
+  -- update
+  cameras[camera_idx].pos = { math.sin(world:now()) * 5, 2, math.cos(world:now()) * 5 }
+  cameras[camera_idx]:look_at({ 0, 1, 0 })
+
+  -- render
   local view = context:view()
   renderer:render(view, &world)
   context:present()
-
-  context:poll_events()
 end
 
 renderer:cleanup()

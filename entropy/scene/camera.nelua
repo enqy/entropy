@@ -1,0 +1,31 @@
+local World = require "entropy.world"
+local Vec3 = require "entropy.math.vec3"
+local Mat4 = require "entropy.math.mat4"
+
+local Camera: type = @record{
+  pos: Vec3,
+  rot: Vec3,
+
+  fov: float32,
+
+  z_near: float32,
+  z_far: float32,
+}
+
+function Camera:look_at(target: Vec3): void
+  local dir = target - self.pos
+  self.rot = dir:norm()
+end
+
+function Camera:view_matrix(): Mat4
+  return Mat4.look_at(self.pos, self.pos + self.rot, {0, 1, 0})
+end
+
+function Camera:proj_matrix(width: uint32, height: uint32): Mat4
+  return Mat4.perspective(self.fov, width / height, self.z_near, self.z_far)
+end
+
+-- register storage for Camera
+World.r("entropy.scene.cameras", Camera)
+
+return Camera

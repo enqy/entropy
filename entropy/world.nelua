@@ -1,4 +1,5 @@
 require "string"
+require "os"
 
 local World: type = @record{}
 ## World.value.storages = {}
@@ -27,6 +28,10 @@ end
 global function check_storage(name: string <comptime>, T: type): void <inline>
   ## static_assert(World.value.storages[name.value] ~= nil, "storage %s is not registered for a type!", name.value)
   ## static_assert(World.value.storages[name.value] == T.value, "storage %s is registered for a different type %s, rather than %s!", name.value, World.value.storages[name.value], T.value)
+end
+
+function World:now(): number <inline>
+  return os.now()
 end
 
 return World

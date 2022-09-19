@@ -18,6 +18,8 @@ local World = require "entropy.world"
       width: uint32,
       height: uint32,
     },
+
+    depth_buffer: WGPUTexture,
   }
   ## RendererImplT.value.is_renderer = true
 
@@ -31,15 +33,65 @@ local World = require "entropy.world"
       height = target_height,
     }
 
+    self.depth_buffer = wgpuDeviceCreateTexture(self.device, &(@WGPUTextureDescriptor){
+      size = {
+        width = self.target_config.width,
+        height = self.target_config.height,
+        depthOrArrayLayers = 1,
+      },
+      mipLevelCount = 1,
+      sampleCount = 1,
+      dimension = WGPUTextureDimension_2D,
+      usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_TextureBinding,
+      format = WGPUTextureFormat_Depth24PlusStencil8,
+    })
+
     self.impl:init(self)
   end
 
   function RendererImplT:cleanup(): void
+    wgpuTextureDestroy(self.depth_buffer)
+
     self.impl:cleanup(self)
+
+    wgpuDeviceDestroy(self.device)
   end
 
   function RendererImplT:resize(width: uint32, height: uint32): void
+    self.target_config.width = width
+    self.target_config.height = height
+
+    wgpuTextureDestroy(self.depth_buffer)
+    self.depth_buffer = wgpuDeviceCreateTexture(self.device, &(@WGPUTextureDescriptor){
+      size = {
+        width = self.target_config.width,
+        height = self.target_config.height,
+        depthOrArrayLayers = 1,
+      },
+      mipLevelCount = 1,
+      sampleCount = 1,
+      dimension = WGPUTextureDimension_2D,
+      usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_TextureBinding,
+      format = WGPUTextureFormat_Depth24PlusStencil8,
+    })
+
     self.impl:resize(self)
+  end
+
+  function RendererImplT:prepare(world: World): void
+    self.impl:prepare(self, world)
+  end
+
+  function RendererImplT:depth_stencil_view(): WGPUTextureView
+    return wgpuTextureCreateView(self.depth_buffer, &(@WGPUTextureViewDescriptor){
+      format = WGPUTextureFormat_Depth24PlusStencil8,
+      dimension = WGPUTextureViewDimension_2D,
+      aspect = WGPUTextureAspect_All,
+      baseMipLevel = 0,
+      mipLevelCount = 1,
+      baseArrayLayer = 0,
+      arrayLayerCount = 1,
+    })
   end
 
   function RendererImplT:render(target: WGPUTextureView, world: *World): void
@@ -51,9 +103,45 @@ local World = require "entropy.world"
       }
     )
 
-    -- call implementation render function
-    self.impl:render(self, encoder, target, world)
+    -- create render pass
+    local pass = wgpuCommandEncoderBeginRenderPass(
+      encoder,
+      &(@WGPURenderPassDescriptor){
+        colorAttachmentCount = 1,
+        colorAttachments = &(@[]WGPURenderPassColorAttachment){
+          {
+            view = target,
+            loadOp = WGPULoadOp_Clear,
+            storeOp = WGPUStoreOp_Store,
+            clearValue = (@WGPUColor){
+              r = 0.0,
+              g = 0.0,
+              b = 0.0,
+              a = 1.0,
+            },
+          },
+        },
+        depthStencilAttachment = &(@WGPURenderPassDepthStencilAttachment){
+          view = self:depth_stencil_view(),
+          depthLoadOp = WGPULoadOp_Clear,
+          depthStoreOp = WGPUStoreOp_Store,
+          depthClearValue = 1.0,
+          depthReadOnly = false,
+          stencilLoadOp = WGPULoadOp_Clear,
+          stencilStoreOp = WGPUStoreOp_Store,
+          stencilClearValue = 0,
+          stencilReadOnly = false,
+        },
+      }
+    )
 
+    -- call implementation render function
+    self.impl:render(self, pass, encoder, target, world)
+
+    -- finish render pass
+    wgpuRenderPassEncoderEnd(pass)
+
+    -- finish command encoder
     local cmd_buffer = wgpuCommandEncoderFinish(
       encoder,
       &(@WGPUCommandBufferDescriptor){

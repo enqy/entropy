@@ -1,6 +1,126 @@
 require "math"
 
+local Vec3 = require "entropy.math.vec3"
+local DVec3 = Vec3.D
 local Vec4 = require "entropy.math.vec4"
+local DVec4 = Vec4.D
+
+## local function impl(T, V3, V4, B)
+function #|T|#.identity(): #|T|#
+  return #|T|#{
+    x = { 1, 0, 0, 0 },
+    y = { 0, 1, 0, 0 },
+    z = { 0, 0, 1, 0 },
+    w = { 0, 0, 0, 1 },
+  }
+end
+
+function #|T|#.from_pos(pos: #|V3|#): #|T|#
+  return {
+    x = { 1, 0, 0, 0 },
+    y = { 0, 1, 0, 0 },
+    z = { 0, 0, 1, 0 },
+    w = { pos.x, pos.y, pos.z, 1 },
+  }
+end
+
+function #|T|#.from_rot(angle: #|B|#, axis: #|V3|#): #|T|#
+  local c = math.cos(angle)
+  local s = math.sin(angle)
+  local t = 1 - c
+  local x, y, z = axis.x, axis.y, axis.z
+  local tx, ty, tz = t * x, t * y, t * z
+  local sx, sy, sz = s * x, s * y, s * z
+  return {
+    x = { tx * x + c, tx * y + sz, tx * z - sy, 0 },
+    y = { tx * y - sz, ty * y + c, ty * z + sx, 0 },
+    z = { tx * z + sy, ty * z - sx, tz * z + c, 0 },
+    w = { 0, 0, 0, 1 },
+  }
+end
+
+function #|T|#.from_scl(scale: #|V3|#): #|T|#
+  return {
+    x = { scale.x, 0, 0, 0 },
+    y = { 0, scale.y, 0, 0 },
+    z = { 0, 0, scale.z, 0 },
+    w = { 0, 0, 0, 1 },
+  }
+end
+
+function #|T|#:transpose(): #|T|#
+  return {
+    x = { self.x.x, self.y.x, self.z.x, self.w.x },
+    y = { self.x.y, self.y.y, self.z.y, self.w.y },
+    z = { self.x.z, self.y.z, self.z.z, self.w.z },
+    w = { self.x.w, self.y.w, self.z.w, self.w.w },
+  }
+end
+
+function #|T|#.__eq(a: #|T|#, b: #|T|#): boolean
+  return (a.x == b.x) and (a.y == b.y) and (a.z == b.z) and (a.w == b.w)
+end
+
+function #|T|#.__mul(a: #|T|#, b: #|T|#): #|T|#
+  local result = #|T|#.identity()
+
+  result.x.x = a.x.x * b.x.x + a.y.x * b.x.y + a.z.x * b.x.z + a.w.x * b.x.w
+  result.x.y = a.x.y * b.x.x + a.y.y * b.x.y + a.z.y * b.x.z + a.w.y * b.x.w
+  result.x.z = a.x.z * b.x.x + a.y.z * b.x.y + a.z.z * b.x.z + a.w.z * b.x.w
+  result.x.w = a.x.w * b.x.x + a.y.w * b.x.y + a.z.w * b.x.z + a.w.w * b.x.w
+
+  result.y.x = a.x.x * b.y.x + a.y.x * b.y.y + a.z.x * b.y.z + a.w.x * b.y.w
+  result.y.y = a.x.y * b.y.x + a.y.y * b.y.y + a.z.y * b.y.z + a.w.y * b.y.w
+  result.y.z = a.x.z * b.y.x + a.y.z * b.y.y + a.z.z * b.y.z + a.w.z * b.y.w
+  result.y.w = a.x.w * b.y.x + a.y.w * b.y.y + a.z.w * b.y.z + a.w.w * b.y.w
+
+  result.z.x = a.x.x * b.z.x + a.y.x * b.z.y + a.z.x * b.z.z + a.w.x * b.z.w
+  result.z.y = a.x.y * b.z.x + a.y.y * b.z.y + a.z.y * b.z.z + a.w.y * b.z.w
+  result.z.z = a.x.z * b.z.x + a.y.z * b.z.y + a.z.z * b.z.z + a.w.z * b.z.w
+  result.z.w = a.x.w * b.z.x + a.y.w * b.z.y + a.z.w * b.z.z + a.w.w * b.z.w
+
+  result.w.x = a.x.x * b.w.x + a.y.x * b.w.y + a.z.x * b.w.z + a.w.x * b.w.w
+  result.w.y = a.x.y * b.w.x + a.y.y * b.w.y + a.z.y * b.w.z + a.w.y * b.w.w
+  result.w.z = a.x.z * b.w.x + a.y.z * b.w.y + a.z.z * b.w.z + a.w.z * b.w.w
+  result.w.w = a.x.w * b.w.x + a.y.w * b.w.y + a.z.w * b.w.z + a.w.w * b.w.w
+
+  return result
+end
+
+function #|T|#.look_at(eye: #|V3|#, target: #|V3|#, up: #|V3|#): #|T|#
+  local f = (target - eye):norm()
+  local s = f:cross(up):norm()
+  local u = s:cross(f)
+
+  return {
+    x = { s.x, u.x, -f.x, 0 },
+    y = { s.y, u.y, -f.y, 0 },
+    z = { s.z, u.z, -f.z, 0 },
+    w = { -s:dot(eye), -u:dot(eye), f:dot(eye), 1 },
+  }
+end
+
+function #|T|#.perspective(fov: #|B|#, aspect: #|B|#, near: #|B|#, far: #|B|#): #|T|#
+  local result = #|T|#.identity()
+
+  local f = 1 / math.tan(math.rad(fov) / 2)
+  local nf = 1 / (near - far)
+
+  result.x.x = f / aspect
+  result.y.y = f
+  result.z.z = (far + near) * nf
+  result.z.w = -1
+  result.w.z = (2 * far * near) * nf
+  result.w.w = 0
+
+  return result
+end
+
+function #|T|#:__tostring(): string
+  local result = self:transpose()
+  return #[T]# .. "(\n\t" .. result.x .. ",\n\t" .. result.y .. ",\n\t" .. result.z .. ",\n\t" .. result.w .. "\n)"
+end
+## end
 
 -- column major, float32
 local Mat4: type = @record{
@@ -9,6 +129,7 @@ local Mat4: type = @record{
   z: Vec4,
   w: Vec4,
 }
+## impl("Mat4", "Vec3", "Vec4", "float32")
 
 -- column major, float64
 local DMat4: type = @record{
@@ -17,6 +138,7 @@ local DMat4: type = @record{
   z: Vec4.D,
   w: Vec4.D,
 }
+## impl("DMat4", "DVec3", "DVec4", "float64")
 local Mat4.D = DMat4
 
 return Mat4

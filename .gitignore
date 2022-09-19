@@ -6,3 +6,5 @@ main
 glfw.nelua
 glfwnative.nelua
 wgpu.nelua
+
+*.obj

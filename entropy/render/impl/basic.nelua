@@ -4,9 +4,13 @@ local World = require "entropy.world"
 local Renderer = require "entropy.render.renderer"
 local Shader = require "entropy.render.shader"
 local Mat4 = require "entropy.math.mat4"
+local Vec4 = require "entropy.math.vec4"
+local Mesh = require "entropy.scene.mesh"
 
-local Globals: type = @record{
-  view_proj: Mat4,
+require "memory"
+
+local Globals = @record{
+  mvp: Mat4,
 }
 
 local Impl: type = @record{
@@ -18,26 +22,90 @@ local Impl: type = @record{
 ## Impl.value.is_renderer_impl = true
 
 function Impl:init(renderer: a_renderer): void
-  -- init global uniform
-  local globals_bind_group_layout = wgpuDeviceCreateBindGroupLayout(
-    renderer.device,
-    &(@WGPUBindGroupLayoutDescriptor){
-      label = "basic globals bind group layout",
-      entryCount = 1,
-      entries = &(@[]WGPUBindGroupLayoutEntry){
-        (@WGPUBindGroupLayoutEntry){
-          binding = 0,
-          visibility = WGPUShaderStage_Vertex | WGPUShaderStage_Fragment,
-          buffer = (@WGPUBufferBindingLayout){
-            type = WGPUBufferBindingType_Uniform,
-            hasDynamicOffset = false,
-            minBindingSize = #Globals,
-          },
+  -- load vertex shader
+  local vs_shader = Shader.load_from_file("basic vert shader", "entropy/render/impl/basic/vert.wgsl")
+  vs_shader:create(renderer.device)
+
+  -- vertex shader stuff
+  local vertex_buffer_layouts: []WGPUVertexBufferLayout = {
+    {
+      arrayStride = #Mesh.Vertex,
+      stepMode = WGPUVertexStepMode_Vertex,
+      attributeCount = 3,
+      attributes = &(@[]WGPUVertexAttribute){
+        {
+          shaderLocation = 0,
+          offset = 0,
+          format = WGPUVertexFormat_Float32x3,
+        },
+        {
+          shaderLocation = 1,
+          offset = 12,
+          format = WGPUVertexFormat_Float32x4,
+        },
+        {
+          shaderLocation = 2,
+          offset = 28,
+          format = WGPUVertexFormat_Float32x2,
         },
       },
+    },
+  }
+  local vertex = (@WGPUVertexState){
+    module = vs_shader.module,
+    entryPoint = "main",
+    bufferCount = #vertex_buffer_layouts,
+    buffers = &vertex_buffer_layouts,
+  }
+
+  local fs_shader = Shader.load_from_file("basic frag shader", "entropy/render/impl/basic/frag.wgsl")
+  fs_shader:create(renderer.device)
+
+  -- fragment shader stuff
+  local blend = (@WGPUBlendState){
+    color = (@WGPUBlendComponent){
+      srcFactor = WGPUBlendFactor_One,
+      dstFactor = WGPUBlendFactor_OneMinusSrcAlpha,
+      operation = WGPUBlendOperation_Add,
+    },
+    alpha = (@WGPUBlendComponent){
+      srcFactor = WGPUBlendFactor_One,
+      dstFactor = WGPUBlendFactor_OneMinusSrcAlpha,
+      operation = WGPUBlendOperation_Add,
+    },
+  }
+  local color_target = (@WGPUColorTargetState){
+    format = renderer.target_config.format,
+    blend = &blend,
+    writeMask = WGPUColorWriteMask_All,
+  }
+  local fragment = (@WGPUFragmentState){
+    module = fs_shader.module,
+    entryPoint = "main",
+    targetCount = 1,
+    targets = &color_target,
+  }
+
+  -- globals bind group
+  local globals_bind_group_layout_entries: []WGPUBindGroupLayoutEntry = {
+    (@WGPUBindGroupLayoutEntry){
+      binding = 0,
+      visibility = WGPUShaderStage_Vertex,
+      buffer = (@WGPUBufferBindingLayout){
+        type = WGPUBufferBindingType_Uniform,
+        hasDynamicOffset = false,
+        minBindingSize = #Globals,
+      },
+    },
+  }
+  local globals_bind_group_layout = wgpuDeviceCreateBindGroupLayout(
+    renderer.device,
+    (@WGPUBindGroupLayoutDescriptor){
+      entryCount = #globals_bind_group_layout_entries,
+      entries = &globals_bind_group_layout_entries,
     }
   )
-  local globals_buffer = wgpuDeviceCreateBuffer(
+  self.globals_buffer = wgpuDeviceCreateBuffer(
     renderer.device,
     &(@WGPUBufferDescriptor){
       label = "basic globals buffer",
@@ -46,7 +114,7 @@ function Impl:init(renderer: a_renderer): void
       mappedAtCreation = false,
     }
   )
-  local globals_bind_group = wgpuDeviceCreateBindGroup(
+  self.globals_bind_group = wgpuDeviceCreateBindGroup(
     renderer.device,
     &(@WGPUBindGroupDescriptor){
       label = "basic globals bind group",
@@ -55,18 +123,12 @@ function Impl:init(renderer: a_renderer): void
       entries = &(@[]WGPUBindGroupEntry){
         (@WGPUBindGroupEntry){
           binding = 0,
-          buffer = globals_buffer,
+          buffer = self.globals_buffer,
           size = #Globals,
         },
       },
     }
   )
-  self.globals_buffer = globals_buffer
-  self.globals_bind_group = globals_bind_group
-
-  -- load shaders
-  local shader = Shader.load_from_file("basic shader", "entropy/render/impl/basic/shader.wgsl")
-  shader:create(renderer.device)
 
   -- setup pipelines
   local pipeline_layout = wgpuDeviceCreatePipelineLayout(
@@ -76,92 +138,105 @@ function Impl:init(renderer: a_renderer): void
       bindGroupLayouts = &(@[]WGPUBindGroupLayout){
         globals_bind_group_layout
       },
-    }
-  )
-  local pipeline = wgpuDeviceCreateRenderPipeline(
-    renderer.device,
-    &(@WGPURenderPipelineDescriptor){
-      label = "basic render pipeline",
-      layout = pipeline_layout,
-      vertex = (@WGPUVertexState){
-        module = shader.module,
-        entryPoint = "vs_main",
-      },
-      primitive = (@WGPUPrimitiveState){
-        topology = WGPUPrimitiveTopology_TriangleList,
-        stripIndexFormat = WGPUIndexFormat_Undefined,
-        frontFace = WGPUFrontFace_CCW,
-        cullMode = WGPUCullMode_None,
-      },
-      multisample = (@WGPUMultisampleState){
-        count = 1,
-        mask = 0xffffffff,
-        alphaToCoverageEnabled = false,
-      },
-      fragment = &(@WGPUFragmentState){
-        module = shader.module,
-        entryPoint = "fs_main",
-        targetCount = 1,
-        targets = &(@[]WGPUColorTargetState){
+      nextInChain = (@*WGPUChainedStruct)(&(@WGPUPipelineLayoutExtras){
+        chain = (@WGPUChainedStruct){
+          sType = WGPUSType_PipelineLayoutExtras,
+        },
+        pushConstantRangeCount = 1,
+        pushConstantRanges = &(@[]WGPUPushConstantRange){
           {
-            format = renderer.target_config.format,
-            blend = &(WGPUBlendState){
-              color = (@WGPUBlendComponent){
-                srcFactor = WGPUBlendFactor_One,
-                dstFactor = WGPUBlendFactor_OneMinusSrcAlpha,
-                operation = WGPUBlendOperation_Add,
-              },
-              alpha = (@WGPUBlendComponent){
-                srcFactor = WGPUBlendFactor_One,
-                dstFactor = WGPUBlendFactor_OneMinusSrcAlpha,
-                operation = WGPUBlendOperation_Add,
-              },
-            },
-            writeMask = WGPUColorWriteMask_All
+            stages = WGPUShaderStage_Vertex,
+            start = 0,
+            End = #Mat4,
           },
         },
-      },
+      }),
     }
   )
-  self.pipeline = pipeline
+  local pipeline_descriptor = (@WGPURenderPipelineDescriptor){
+    label = "basic render pipeline",
+    layout = pipeline_layout,
+    vertex = vertex,
+    fragment = &fragment,
+    primitive = (@WGPUPrimitiveState){
+      cullMode = WGPUCullMode_Back,
+      topology = WGPUPrimitiveTopology_TriangleList,
+      stripIndexFormat = WGPUIndexFormat_Undefined,
+      frontFace = WGPUFrontFace_CCW,
+    },
+    multisample = (@WGPUMultisampleState){
+      count = 1,
+      mask = 0xffffffff,
+      alphaToCoverageEnabled = false,
+    },
+    depthStencil = &(@WGPUDepthStencilState){
+      format = WGPUTextureFormat_Depth24PlusStencil8,
+      depthWriteEnabled = true,
+      depthCompare = WGPUCompareFunction_Less,
+      stencilFront = (@WGPUStencilFaceState){
+        compare = WGPUCompareFunction_Always,
+        failOp = WGPUStencilOperation_Keep,
+        depthFailOp = WGPUStencilOperation_Keep,
+        passOp = WGPUStencilOperation_Keep,
+      },
+      stencilBack = (@WGPUStencilFaceState){
+        compare = WGPUCompareFunction_Always,
+        failOp = WGPUStencilOperation_Keep,
+        depthFailOp = WGPUStencilOperation_Keep,
+        passOp = WGPUStencilOperation_Keep,
+      },
+      stencilReadMask = 0xffffffff,
+      stencilWriteMask = 0xffffffff,
+    },
+  }
+  self.pipeline = wgpuDeviceCreateRenderPipeline(renderer.device, &pipeline_descriptor)
 
-  -- drop shader
-  shader:cleanup()
+  -- cleanup now unneeded resources
+  vs_shader:cleanup()
+  fs_shader:cleanup()
+  --wgpuPipelineLayoutDrop(pipeline_layout)
+  wgpuBindGroupLayoutDrop(globals_bind_group_layout)
 end
 
 function Impl:cleanup(renderer: a_renderer): void
   wgpuRenderPipelineDrop(self.pipeline)
+  wgpuBufferDrop(self.globals_buffer)
+  wgpuBindGroupDrop(self.globals_bind_group)
 end
 
 function Impl:resize(renderer: a_renderer): void
 end
 
-function Impl:render(renderer: a_renderer, encoder: WGPUCommandEncoder, target: WGPUTextureView, world: *World): void
-  local pass = wgpuCommandEncoderBeginRenderPass(
-    encoder,
-    &(@WGPURenderPassDescriptor){
-      colorAttachmentCount = 1,
-      colorAttachments = &(@[]WGPURenderPassColorAttachment){
-        {
-          view = target,
-          loadOp = WGPULoadOp_Clear,
-          storeOp = WGPUStoreOp_Store,
-          clearValue = (@WGPUColor){
-            r = 0.0,
-            g = 0.0,
-            b = 0.0,
-            a = 1.0,
-          },
-        },
-      },
-    }
+function Impl:prepare(renderer: a_renderer, world: *World): void
+end
+
+function Impl:render(renderer: a_renderer, pass: WGPURenderPassEncoder, encoder: WGPUCommandEncoder, target: WGPUTextureView, world: *World): void
+  -- get primary camera
+  local camera = world:s("entropy.scene.cameras")[0]
+  local view = camera:view_matrix()
+  local proj = camera:proj_matrix(renderer.target_config.width, renderer.target_config.height)
+
+  wgpuQueueWriteBuffer(
+    renderer.queue,
+    self.globals_buffer,
+    0,
+    &(@Globals){
+      mvp = (proj * view):transpose(),
+    },
+    #Globals
   )
 
   wgpuRenderPassEncoderSetPipeline(pass, self.pipeline)
   wgpuRenderPassEncoderSetBindGroup(pass, 0, self.globals_bind_group, 0, nilptr)
-  wgpuRenderPassEncoderDraw(pass, 3, 1, 0, 0)
 
-  wgpuRenderPassEncoderEnd(pass)
+  local meshes = world:s("entropy.scene.meshes")
+  for id, mesh in mpairs(meshes) do
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, mesh.vertex_buffer, 0, 0)
+    wgpuRenderPassEncoderSetIndexBuffer(pass, mesh.index_buffer, WGPUIndexFormat_Uint32, 0)
+    local model = mesh.transform:transpose()
+    wgpuRenderPassEncoderSetPushConstants(pass, WGPUShaderStage_Vertex, 0, #Mat4, &model)
+    wgpuRenderPassEncoderDrawIndexed(pass, #mesh.indices, 1, 0, 0, 0)
+  end
 end
 
 return Impl

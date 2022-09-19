@@ -8,6 +8,6 @@ local Material: type = @record{
 }
 
 -- register storage for Material
-World.r("entropy.render.scene.materials", Material)
+World.r("entropy.scene.materials", Material)
 
 return Material

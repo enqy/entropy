@@ -29,8 +29,29 @@ function #|T|#.__unm(a: #|T|#): #|T|#
   }
 end
 
+function #|T|#:dot(b: #|T|#): number
+  return self.x * b.x + self.y * b.y + self.z * b.z
+end
+
+function #|T|#:cross(b: #|T|#): #|T|#
+  return {
+    x = self.y * b.z - self.z * b.y,
+    y = self.z * b.x - self.x * b.z,
+    z = self.x * b.y - self.y * b.x,
+  }
+end
+
 function #|T|#:__len(): number
   return math.sqrt((self.x * self.x) + (self.y * self.y) + (self.z * self.z))
+end
+
+function #|T|#:norm(): #|T|#
+  local len = #self
+  return {
+    x = self.x / len,
+    y = self.y / len,
+    z = self.z / len,
+  }
 end
 
 function #|T|#:__tostring(): string
