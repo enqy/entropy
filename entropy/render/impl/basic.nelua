@@ -147,7 +147,7 @@ function Impl:init(renderer: a_renderer): void
           {
             stages = WGPUShaderStage_Vertex,
             start = 0,
-            End = #Mat4,
+            stop = #Mat4,
           },
         },
       }),

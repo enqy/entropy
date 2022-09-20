@@ -175,11 +175,11 @@
 
                     nativeBuildInputs = with pkgs; [ cmake ];
 
-                    cmakeFlags = [ "-DBUILD_SHARED_LIBS=ON" "-DGLFW_BUILD_EXAMPLES=OFF" "-DGLFW_BUILD_TESTS=OFF" ];
-
                     patches = [
                       ./nix/patches/glfw-x11.patch
                     ];
+
+                    cmakeFlags = [ "-DBUILD_SHARED_LIBS=ON" "-DGLFW_BUILD_EXAMPLES=OFF" "-DGLFW_BUILD_TESTS=OFF" ];
                   };
                 in
                 recurseIntoAttrs {
@@ -205,11 +205,17 @@
                       rustPlatform.bindgenHook
                     ];
 
+                    postPatch = ''
+                      patch -p1 < ${./nix/patches/wgpu-native-nelua.patch} || true
+                      patch -p1 < ${./nix/patches/wgpu-native-ffi.patch} || true
+                    '';
+
                     preInstall = ''
                       mkdir -p $out/include
 
-                      cp ${inputs.wgpu-native}/ffi/webgpu-headers/webgpu.h $out/include
-                      cp ${inputs.wgpu-native}/ffi/wgpu.h $out/include
+                      install -m664 ${inputs.wgpu-native}/ffi/webgpu-headers/webgpu.h $out/include
+                      install -m664 ${inputs.wgpu-native}/ffi/wgpu.h $out/include
+                      patch -d $out/include -p2 < ${./nix/patches/wgpu-native-ffi.patch}
                       sed -i -e 's/#include "webgpu-headers.*/#include <webgpu.h>/' $out/include/wgpu.h
                     '';
 
