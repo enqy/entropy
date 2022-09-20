@@ -45,7 +45,7 @@ require "vector"
   end
 
   function StorageT.pin(self: *StorageT, ptr: Pointer(name, T)): Pointer(name, T) <inline>
-    check(ptr < #self.data - 1, "invalid ptr!")
+    check(ptr < #self.data, "invalid ptr!")
     check(self.refs[ptr] > 0, "dead ptr!")
 
     self.refs[ptr] = self.refs[ptr] + 1
@@ -53,7 +53,7 @@ require "vector"
   end
 
   function StorageT.unpin(self: *StorageT, ptr: Pointer(name, T)): void <inline>
-    check(ptr < #self.data - 1, "invalid ptr!")
+    check(ptr < #self.data, "invalid ptr!")
     check(self.refs[ptr] > 0, "dead ptr!")
 
     self.refs[ptr] = self.refs[ptr] - 1

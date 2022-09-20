@@ -19,6 +19,7 @@ function render.request_adapter_device(surface: WGPUSurface): (WGPUAdapter, WGPU
       }),
       powerPreference = WGPUPowerPreference_HighPerformance,
       compatibleSurface = surface,
+      forceFallbackAdapter = false,
     },
     function (status: WGPURequestAdapterStatus, received: WGPUAdapter, message: cstring, userdata: pointer): void
       $(@*WGPUAdapter)(userdata) = received
@@ -43,6 +44,16 @@ function render.request_adapter_device(surface: WGPUSurface): (WGPUAdapter, WGPU
         limits = (@WGPULimits){
           maxBindGroups = 8,
         },
+        nextInChain = (@*WGPUChainedStruct)(&(@WGPURequiredLimitsExtras){
+          chain = (@WGPUChainedStruct){
+            sType = WGPUSType_RequiredLimitsExtras,
+          },
+          maxPushConstantSize = 128,
+        }),
+      },
+      requiredFeaturesCount = 1,
+      requiredFeatures = &(@[]WGPUFeatureName){
+        WGPUNativeFeature_PUSH_CONSTANTS
       },
     },
     function (status: WGPURequestDeviceStatus, received: WGPUDevice, message: cstring, userdata: pointer): void

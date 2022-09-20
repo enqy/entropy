@@ -1,0 +1,50 @@
+local Type = @enum{
+  Key = 0,
+  MouseMotion,
+  MouseButton,
+}
+
+local DataKeyAction= @enum{
+  Release = 0,
+  Press,
+  Repeat,
+}
+local DataKey = @record{
+  action: DataKeyAction,
+  key: uint32,
+  modifiers: uint32,
+}
+local DataKey.Action = DataKeyAction
+
+local DataMouseMotion = @record{
+  x: int32,
+  y: int32,
+}
+
+local DataMouseButtonAction = @enum{
+  Press = 0,
+  Release,
+}
+local DataMouseButton = @record{
+  action: DataMouseButtonAction,
+  button: uint32,
+}
+local DataMouseButton.Action = DataMouseButtonAction
+
+local Data = @union{
+  Key: DataKey,
+  MouseMotion: DataMouseMotion,
+  MouseButton: DataMouseButton,
+}
+local Data.Key = DataKey
+local Data.MouseMotion = DataMouseMotion
+local Data.MouseButton = DataMouseButton
+
+local Event: type = @record{
+  type: Type,
+  data: Data,
+}
+local Event.Type = Type
+local Event.Data = Data
+
+return Event

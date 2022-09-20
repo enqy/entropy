@@ -60,6 +60,15 @@ function Mesh.load_from_obj(path: string): Mesh
   return result
 end
 
+function Mesh:clone(): Mesh
+  local result: Mesh
+
+  result.vertices = self.vertices
+  result.indices = self.indices
+
+  return result
+end
+
 function Mesh:cleanup()
   wgpuBufferDrop(self.vertex_buffer)
   wgpuBufferDrop(self.index_buffer)

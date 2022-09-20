@@ -23,7 +23,7 @@ struct VertexOutput {
     in: VertexInput,
 ) -> VertexOutput {
     var out: VertexOutput;
-    var model_view_proj = camera.view_proj;
+    var model_view_proj = draw.model * camera.view_proj;
     out.clip_position = vec4<f32>(in.position, 1.0) * model_view_proj;
     out.color = 0.5 * (vec4<f32>(in.position, 1.0) + vec4<f32>(1.0, 1.0, 1.0, 1.0));
     return out;

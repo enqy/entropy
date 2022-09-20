@@ -3,6 +3,9 @@ require "glfwnative"
 require "wgpu"
 
 local render = require "entropy.render"
+local Event = require "entropy.defs.event"
+
+require "list"
 
 local GLFWContext: type = @record{
   width: uint32,
@@ -21,6 +24,8 @@ local GLFWContext: type = @record{
   format: WGPUTextureFormat,
 
   swapchain: WGPUSwapChain,
+
+  event_queue: list(Event),
 }
 
 function GLFWContext:create_swapchain(): void
@@ -73,6 +78,32 @@ function GLFWContext:init(title: string, width: uint32, height: uint32, vsync: b
       cself.resize_callback(cself.user_pointer, width, height)
     end
   end)
+
+  -- add event callbacks
+  glfwSetKeyCallback(self.window, function(window: *GLFWwindow, key: cint, scancode: cint, action: cint, mods: cint): void
+    local cself = (@*GLFWContext)(glfwGetWindowUserPointer(window))
+    local event: Event
+    event.type = Event.Type.Key
+    event.data.Key.action = action
+    event.data.Key.key = key
+    event.data.Key.modifiers = mods
+    cself.event_queue:pushback(event)
+  end)
+
+  glfwSetCursorPosCallback(self.window, function(window: *GLFWwindow, x: cdouble, y: cdouble): void
+    local cself = (@*GLFWContext)(glfwGetWindowUserPointer(window))
+    local event: Event
+    event.type = Event.Type.MouseMotion
+    event.data.MouseMotion.x = x
+    event.data.MouseMotion.y = y
+    cself.event_queue:pushback(event)
+  end)
+
+  -- cursor settings
+  glfwSetInputMode(self.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED)
+  if glfwRawMouseMotionSupported() ~= 0 then
+    glfwSetInputMode(self.window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE)
+  end
 
   -- create webgpu surface for window
   -- this part is platform dependent
@@ -135,8 +166,18 @@ function GLFWContext:should_close(): boolean <inline>
   return glfwWindowShouldClose(self.window) ~= 0
 end
 
-function GLFWContext:poll_events(): void <inline>
+function GLFWContext:close(): void <inline>
+  glfwSetWindowShouldClose(self.window, 1)
+end
+
+function GLFWContext:poll_event(): (boolean, *list(Event)) <inline>
   glfwPollEvents()
+
+  if self.event_queue:empty() then
+    return false, &self.event_queue
+  else
+    return true, &self.event_queue
+  end
 end
 
 return GLFWContext

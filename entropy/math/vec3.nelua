@@ -1,6 +1,6 @@
 require "math"
 
-## local function impl(T)
+## local function impl(T, B)
 function #|T|#.__eq(a: #|T|#, b: #|T|#): boolean
   return (a.x == b.x) and (a.y == b.y) and (a.z == b.z)
 end
@@ -26,6 +26,14 @@ function #|T|#.__unm(a: #|T|#): #|T|#
     x = -a.x,
     y = -a.y,
     z = -a.z,
+  }
+end
+
+function #|T|#:scale(s: #|B|#): #|T|#
+  return {
+    x = self.x * s,
+    y = self.y * s,
+    z = self.z * s,
   }
 end
 
@@ -64,14 +72,14 @@ local Vec3: type = @record{
   y: float32,
   z: float32,
 }
-## impl("Vec3")
+## impl("Vec3", "float32")
 
 local DVec3: type = @record{
   x: float64,
   y: float64,
   z: float64,
 }
-## impl("DVec3")
+## impl("DVec3", "float64")
 local Vec3.D = DVec3
 
 return Vec3

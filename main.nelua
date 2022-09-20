@@ -6,6 +6,7 @@ local World = require "entropy.world"
 local Storage = require "entropy.world.storage"
 local P = require "entropy.world.pointer"
 local Vec2 = require "entropy.math.vec2"
+local Vec3 = require "entropy.math.vec3"
 local Mat4 = require "entropy.math.mat4"
 
 local world: World
@@ -102,15 +103,6 @@ avg = avg / #times
 
 print("Avg Iteration: ", avg * 1000000)
 
--- math
-local a = Mat4.identity()
-local b = Mat4.identity()
-b.x.x = 2
-b.y.x = 2
-b.y.y = 2
-local c = a * b
-print(c)
-
 -- renderer
 require "wgpu"
 wgpuSetLogCallback((@WGPULogCallback)(function(level: WGPULogLevel, msg: cstring, ptr: pointer): void
@@ -123,9 +115,10 @@ local Renderer = require "entropy.render.renderer"
 local BasicImpl = require "entropy.render.impl.basic"
 local Camera = require "entropy.scene.camera"
 local Mesh = require "entropy.scene.mesh"
+local Event = require "entropy.defs.event"
 
 local context: GLFWContext
-context:init("testing", 512, 512, false)
+context:init("testing", 512, 512, true)
 
 local renderer: Renderer(BasicImpl)
 renderer:init(context.device, context.format, context.width, context.height)
@@ -140,7 +133,7 @@ end
 -- setup camera
 local cameras = world:s("entropy.scene.cameras")
 local camera_idx = cameras:create({
-  pos = { 0, 0, 0 },
+  pos = { 10, 10, 10 },
   rot = { 0, 0, 0 },
 
   fov = 90,
@@ -150,24 +143,131 @@ local camera_idx = cameras:create({
 })
 cameras[camera_idx]:look_at({ 0, 0, 0 })
 
--- load mesh
+-- load meshes
+local teapot_mesh = Mesh.load_from_obj("./teapot.obj")
+local cube_mesh = Mesh.load_from_obj("./cube.obj")
+
 local meshes = world:s("entropy.scene.meshes")
-local mesh_idx = meshes:create(Mesh.load_from_obj("./teapot.obj"))
-meshes[mesh_idx]:prepare(renderer)
-meshes[mesh_idx].transform = Mat4.identity()
+for y=-3,<=3 do
+  for x=-3,<=3 do
+    for z=-3,<=3 do
+      local mesh_idx
+      if y % 2 == 0 and x % 2 == 0 and z % 2 == 0 then
+        mesh_idx = meshes:create(teapot_mesh:clone())
+      else
+        mesh_idx = meshes:create(cube_mesh:clone())
+      end
+      meshes[mesh_idx]:prepare(renderer)
+      meshes[mesh_idx].transform = Mat4.from_pos({ x * 5, z * 5, y * 5 }) * Mat4.from_scl({ x, y, z })
+    end
+  end
+end
+
+local fps_list: vector(float64)
+
+local is_forward_pressed = false
+local is_backward_pressed = false
+local is_left_pressed = false
+local is_right_pressed = false
+local is_up_pressed = false
+local is_down_pressed = false
+
+local camera_yaw = 0.0
+local camera_pitch = 0.0
+
+local last_mouse_x = 0.0
+local last_mouse_y = 0.0
 
 while not context:should_close() do
+  local now = world:now()
+
   -- get input
-  context:poll_events()
+  local has_event, event_queue = context:poll_event()
+  if has_event then
+    while not event_queue:empty() do
+      local event = event_queue:popfront()
+      if event.type == Event.Type.Key then
+        if event.data.Key.action == Event.Data.Key.Action.Press then
+          if event.data.Key.key == 256 then
+            context:close();
+          end
+        end
+
+        local state: boolean = false
+        if event.data.Key.action == Event.Data.Key.Action.Press or event.data.Key.action == Event.Data.Key.Action.Repeat then
+          state = true
+        elseif event.data.Key.action == Event.Data.Key.Action.Release then
+          state = false
+        end
+
+        if event.data.Key.key == 87 then
+          is_forward_pressed = state
+        elseif event.data.Key.key == 83 then
+          is_backward_pressed = state
+        elseif event.data.Key.key == 65 then
+          is_left_pressed = state
+        elseif event.data.Key.key == 68 then
+          is_right_pressed = state
+        elseif event.data.Key.key == 32 then
+          is_up_pressed = state
+        elseif event.data.Key.key == 340 then
+          is_down_pressed = state
+        end
+      elseif event.type == Event.Type.MouseMotion then
+        local mouse_dx = event.data.MouseMotion.x - last_mouse_x
+        local mouse_dy = event.data.MouseMotion.y - last_mouse_y
+
+        camera_yaw = camera_yaw + math.rad(mouse_dx) * 0.2
+        camera_pitch = math.clamp(camera_pitch + math.rad(mouse_dy) * 0.2, (-math.pi / 2) + 0.0001, (math.pi / 2) - 0.0001)
+
+        local camera = &cameras[camera_idx]
+        camera.rot = (@Vec3)({ math.cos(camera_yaw) * math.cos(camera_pitch), -math.sin(camera_pitch), math.sin(camera_yaw) * math.cos(camera_pitch) }):norm()
+
+        last_mouse_x = event.data.MouseMotion.x
+        last_mouse_y = event.data.MouseMotion.y
+      end
+    end
+  end
 
   -- update
-  cameras[camera_idx].pos = { math.sin(world:now()) * 5, 2, math.cos(world:now()) * 5 }
-  cameras[camera_idx]:look_at({ 0, 1, 0 })
+  if is_forward_pressed then
+    cameras[camera_idx].pos = cameras[camera_idx].pos + cameras[camera_idx].rot:scale(1)
+  end
+  if is_backward_pressed then
+    cameras[camera_idx].pos = cameras[camera_idx].pos - cameras[camera_idx].rot:scale(1)
+  end
+  if is_left_pressed then
+    cameras[camera_idx].pos = cameras[camera_idx].pos - cameras[camera_idx].rot:cross({0, 1, 0}):norm():scale(1)
+  end
+  if is_right_pressed then
+    cameras[camera_idx].pos = cameras[camera_idx].pos + cameras[camera_idx].rot:cross({0, 1, 0}):norm():scale(1)
+  end
+  if is_up_pressed then
+    cameras[camera_idx].pos = cameras[camera_idx].pos + {0, 1, 0}
+  end
+  if is_down_pressed then
+    cameras[camera_idx].pos = cameras[camera_idx].pos - {0, 1, 0}
+  end
+
+  for _, mesh in mpairs(meshes) do
+    mesh.transform = mesh.transform * Mat4.from_rot(0.01, { 0, 0, 1 }) * Mat4.from_rot(0.01, { 1, 0, 0 })
+  end
 
   -- render
   local view = context:view()
   renderer:render(view, &world)
   context:present()
+
+  fps_list:push(1 / (world:now() - now))
+  if #fps_list > 30 then
+    local avg: float64 = 0.0
+    for _, time in ipairs(fps_list) do
+      avg = avg + time
+    end
+    avg = avg / #fps_list
+    print("FPS: ", avg)
+    fps_list:clear()
+  end
 end
 
 renderer:cleanup()

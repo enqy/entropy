@@ -7,21 +7,23 @@ local Shader: type = @record{
   module: WGPUShaderModule,
 }
 
-function Shader.load_from_file(name: string, path: string): Shader
+function Shader.load_from_file(path: string): Shader
   local file = filestream.open(path, "rb")
   file:seek("set", 0)
 
-  local wgsl_descriptor = default_allocator:new(@WGPUShaderModuleWGSLDescriptor)
-  wgsl_descriptor.chain.next = nilptr
-  wgsl_descriptor.chain.sType = WGPUSType_ShaderModuleWGSLDescriptor
-  wgsl_descriptor.code = file:read("a")
+  local wgsl_descriptor: *WGPUShaderModuleWGSLDescriptor = default_allocator:new(@WGPUShaderModuleWGSLDescriptor)
+  $wgsl_descriptor = (@WGPUShaderModuleWGSLDescriptor){
+    chain = (@WGPUChainedStruct) {
+      sType = WGPUSType_ShaderModuleWGSLDescriptor,
+    },
+    code = file:read("*a"),
+  }
 
   file:close()
 
   return {
     descriptor = (@WGPUShaderModuleDescriptor){
       nextInChain = (@*WGPUChainedStruct)(wgsl_descriptor),
-      label = name,
     },
   }
 end

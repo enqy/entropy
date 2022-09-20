@@ -23,7 +23,7 @@ local Impl: type = @record{
 
 function Impl:init(renderer: a_renderer): void
   -- load vertex shader
-  local vs_shader = Shader.load_from_file("basic vert shader", "entropy/render/impl/basic/vert.wgsl")
+  local vs_shader = Shader.load_from_file("entropy/render/impl/basic/vert.wgsl")
   vs_shader:create(renderer.device)
 
   -- vertex shader stuff
@@ -58,7 +58,7 @@ function Impl:init(renderer: a_renderer): void
     buffers = &vertex_buffer_layouts,
   }
 
-  local fs_shader = Shader.load_from_file("basic frag shader", "entropy/render/impl/basic/frag.wgsl")
+  local fs_shader = Shader.load_from_file("entropy/render/impl/basic/frag.wgsl")
   fs_shader:create(renderer.device)
 
   -- fragment shader stuff
@@ -194,7 +194,7 @@ function Impl:init(renderer: a_renderer): void
   -- cleanup now unneeded resources
   vs_shader:cleanup()
   fs_shader:cleanup()
-  --wgpuPipelineLayoutDrop(pipeline_layout)
+  wgpuPipelineLayoutDrop(pipeline_layout)
   wgpuBindGroupLayoutDrop(globals_bind_group_layout)
 end
 
