@@ -191,7 +191,12 @@
                       buildInputs = with linuxPkgs.aarch64; [ xorg.libX11 xorg.libXrandr xorg.libXinerama xorg.libXcursor xorg.libXi xorg.libXext ];
                     });
                   };
-                  windows = windowsPkgs.stdenv.mkDerivation (recursiveUpdate baseDrv { });
+                  windows = windowsPkgs.stdenv.mkDerivation (recursiveUpdate baseDrv {
+                    # this is needed because some compilers look for .lib files to link for when compiling for windows
+                    postInstall = ''
+                      ln -fs $out/lib/libglfw3dll.a $out/lib/glfw3.lib
+                    '';
+                  });
                 };
 
               wgpu-native =

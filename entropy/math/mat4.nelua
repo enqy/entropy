@@ -100,17 +100,17 @@ function #|T|#.look_at(eye: #|V3|#, target: #|V3|#, up: #|V3|#): #|T|#
   }
 end
 
-function #|T|#.perspective(fov: #|B|#, aspect: #|B|#, near: #|B|#, far: #|B|#): #|T|#
+function #|T|#.perspective(fov: #|B|#, aspect: #|B|#, near_clip: #|B|#, far_clip: #|B|#): #|T|#
   local result = #|T|#.identity()
 
   local f = 1 / math.tan(math.rad(fov) / 2)
-  local nf = 1 / (near - far)
+  local nf = 1 / (near_clip - far_clip)
 
   result.x.x = f / aspect
   result.y.y = f
-  result.z.z = (far + near) * nf
+  result.z.z = (far_clip + near_clip) * nf
   result.z.w = -1
-  result.w.z = (2 * far * near) * nf
+  result.w.z = (2 * far_clip * near_clip) * nf
   result.w.w = 0
 
   return result
