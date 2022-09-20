@@ -1,6 +1,7 @@
 .direnv/
 result
 main
+main.c
 
 # testing purposes
 glfw.nelua
