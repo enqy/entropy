@@ -92,6 +92,22 @@
         "type": "github"
       }
     },
+    "naga": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1663443574,
+        "narHash": "sha256-9KCBJiQtsXgh5Mqbn7+sK8JXvacwxRjB4+/vbj2oH2w=",
+        "owner": "gfx-rs",
+        "repo": "naga",
+        "rev": "abc4e1572affc9f0e12fa446c5f7f9a78652c1a9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "gfx-rs",
+        "repo": "naga",
+        "type": "github"
+      }
+    },
     "nelua": {
       "flake": false,
       "locked": {
@@ -130,6 +146,7 @@
         "flake-utils": "flake-utils",
         "gitignore": "gitignore",
         "glfw": "glfw",
+        "naga": "naga",
         "nelua": "nelua",
         "nixpkgs": "nixpkgs",
         "rust-overlay": "rust-overlay",

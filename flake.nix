@@ -41,6 +41,10 @@
       url = "github:glfw/glfw/3.3-stable";
       flake = false;
     };
+    naga = {
+      url = "github:gfx-rs/naga";
+      flake = false;
+    };
   };
 
   outputs = inputs@{ self, nixpkgs, rust-overlay, flake-utils, gitignore, crane, ... }:
@@ -172,6 +176,10 @@
                     nativeBuildInputs = with pkgs; [ cmake ];
 
                     cmakeFlags = [ "-DBUILD_SHARED_LIBS=ON" "-DGLFW_BUILD_EXAMPLES=OFF" "-DGLFW_BUILD_TESTS=OFF" ];
+
+                    patches = [
+                      ./nix/patches/glfw-x11.patch
+                    ];
                   };
                 in
                 recurseIntoAttrs {
@@ -204,6 +212,75 @@
                       cp ${inputs.wgpu-native}/ffi/wgpu.h $out/include
                       sed -i -e 's/#include "webgpu-headers.*/#include <webgpu.h>/' $out/include/wgpu.h
                     '';
+
+                    CARGO_PROFILE = "dev";
+                  };
+                in
+                recurseIntoAttrs {
+                  linux = recurseIntoAttrs {
+                    x86_64 =
+                      let
+                        rustToolchain = pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
+                          targets = [
+                            "x86_64-unknown-linux-gnu"
+                          ];
+                        };
+                        rustPlatform = linuxPkgs.x86_64.makeRustPlatform {
+                          rustc = rustToolchain;
+                          cargo = rustToolchain;
+                        };
+                        craneLib = (crane.mkLib linuxPkgs.x86_64).overrideToolchain rustToolchain;
+                      in
+                      craneLib.buildPackage (recursiveUpdate baseDrv { });
+                    aarch64 =
+                      let
+                        rustToolchain = pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
+                          targets = [
+                            "aarch64-unknown-linux-gnu"
+                          ];
+                        };
+                        rustPlatform = linuxPkgs.aarch64.makeRustPlatform {
+                          rustc = rustToolchain;
+                          cargo = rustToolchain;
+                        };
+                        craneLib = (crane.mkLib linuxPkgs.aarch64).overrideToolchain rustToolchain;
+                      in
+                      craneLib.buildPackage (recursiveUpdate baseDrv { });
+                  };
+                  windows =
+                    let
+                      rustToolchain = windowsPkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
+                        targets = [
+                          "x86_64-pc-windows-gnu"
+                        ];
+                      };
+                      rustPlatform = windowsPkgs.makeRustPlatform {
+                        rustc = rustToolchain;
+                        cargo = rustToolchain;
+                      };
+                      craneLib = (crane.mkLib windowsPkgs).overrideToolchain rustToolchain;
+                    in
+                    craneLib.buildPackage (recursiveUpdate baseDrv {
+                      CARGO_BUILD_TARGET = "x86_64-pc-windows-gnu";
+
+                      buildInputs = with windowsPkgs; [ stdenv.cc windows.pthreads ];
+                    });
+                };
+              naga =
+                let
+                  baseDrv = {
+                    pname = "naga";
+                    version = inputs.naga.shortRev;
+                    src = inputs.naga;
+
+                    nativeBuildInputs = with pkgs; [
+                      rustPlatform.bindgenHook
+                    ];
+
+                    cargoLock = ./nix/naga-cargo.lock;
+                    cargoExtraArgs = "--all-features";
+
+                    doCheck = false;
                   };
                 in
                 recurseIntoAttrs {
@@ -418,10 +495,15 @@
                     xorg.libX11
                     xorg.libXrandr
                     wine64
+                    zig
+                    vulkan-validation-layers
+                    vulkan-tools
+                    vulkan-tools-lunarg
                   ] ++ [
                     packages.nelua
                     packages."glfw/linux/x86_64"
                     packages."wgpu-native/linux/x86_64"
+                    packages."naga/linux/x86_64"
                   ];
 
                 LD_LIBRARY_PATH = [ "${pkgs.vulkan-loader}/lib" ];
