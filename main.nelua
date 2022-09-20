@@ -144,19 +144,13 @@ local camera_idx = cameras:create({
 cameras[camera_idx]:look_at({ 0, 0, 0 })
 
 -- load meshes
-local teapot_mesh = Mesh.load_from_obj("./teapot.obj")
 local cube_mesh = Mesh.load_from_obj("./cube.obj")
 
 local meshes = world:s("entropy.scene.meshes")
 for y=-3,<=3 do
   for x=-3,<=3 do
     for z=-3,<=3 do
-      local mesh_idx
-      if y % 2 == 0 and x % 2 == 0 and z % 2 == 0 then
-        mesh_idx = meshes:create(teapot_mesh:clone())
-      else
-        mesh_idx = meshes:create(cube_mesh:clone())
-      end
+      local mesh_idx = meshes:create(cube_mesh:clone())
       meshes[mesh_idx]:prepare(renderer)
       meshes[mesh_idx].transform = Mat4.from_pos({ x * 5, z * 5, y * 5 }) * Mat4.from_scl({ x, y, z })
     end
