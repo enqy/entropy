@@ -70,18 +70,18 @@
             let
               linuxPkgs = {
                 x86_64 = import nixpkgs {
-                  inherit system;
-                  crossSystem = if (system != "x86_64-linux") then { config = "x86_64-linux"; } else null;
+                  localSystem = system;
+                  crossSystem = if (system == "x86_64-linux") then null else { config = "x86_64-unknown-linux-gnu"; };
                   overlays = [ (import rust-overlay) ];
                 };
                 aarch64 = import nixpkgs {
-                  inherit system;
-                  crossSystem = if (system != "aarch64-linux") then { config = "aarch64-linux"; } else null;
+                  localSystem = system;
+                  crossSystem = { config = "aarch64-unknown-linux-gnu"; };
                   overlays = [ (import rust-overlay) ];
                 };
               };
               windowsPkgs = import nixpkgs {
-                inherit system;
+                localSystem = system;
                 crossSystem = { config = "x86_64-w64-mingw32"; };
                 overlays = [ (import rust-overlay) ];
               };
@@ -231,7 +231,7 @@
                   linux = recurseIntoAttrs {
                     x86_64 =
                       let
-                        rustToolchain = pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
+                        rustToolchain = linuxPkgs.x86_64.pkgsBuildHost.rust-bin.stable.latest.default.override {
                           targets = [
                             "x86_64-unknown-linux-gnu"
                           ];
@@ -242,10 +242,12 @@
                         };
                         craneLib = (crane.mkLib linuxPkgs.x86_64).overrideToolchain rustToolchain;
                       in
-                      craneLib.buildPackage (recursiveUpdate baseDrv { });
+                      craneLib.buildPackage (recursiveUpdate baseDrv {
+                        CARGO_BUILD_TARGET = "x86_64-unknown-linux-gnu";
+                      });
                     aarch64 =
                       let
-                        rustToolchain = pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
+                        rustToolchain = linuxPkgs.aarch64.pkgsBuildHost.rust-bin.stable.latest.default.override {
                           targets = [
                             "aarch64-unknown-linux-gnu"
                           ];
@@ -256,7 +258,9 @@
                         };
                         craneLib = (crane.mkLib linuxPkgs.aarch64).overrideToolchain rustToolchain;
                       in
-                      craneLib.buildPackage (recursiveUpdate baseDrv { });
+                      craneLib.buildPackage (recursiveUpdate baseDrv {
+                        CARGO_BUILD_TARGET = "aarch64-unknown-linux-gnu";
+                      });
                   };
                   windows =
                     let
@@ -284,10 +288,6 @@
                     version = inputs.naga.shortRev;
                     src = inputs.naga;
 
-                    nativeBuildInputs = with pkgs; [
-                      rustPlatform.bindgenHook
-                    ];
-
                     cargoLock = ./nix/naga-cargo.lock;
                     cargoExtraArgs = "--all-features";
 
@@ -298,7 +298,7 @@
                   linux = recurseIntoAttrs {
                     x86_64 =
                       let
-                        rustToolchain = pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
+                        rustToolchain = linuxPkgs.x86_64.pkgsBuildHost.rust-bin.stable.latest.default.override {
                           targets = [
                             "x86_64-unknown-linux-gnu"
                           ];
@@ -309,10 +309,12 @@
                         };
                         craneLib = (crane.mkLib linuxPkgs.x86_64).overrideToolchain rustToolchain;
                       in
-                      craneLib.buildPackage (recursiveUpdate baseDrv { });
+                      craneLib.buildPackage (recursiveUpdate baseDrv {
+                        CARGO_BUILD_TARGET = "x86_64-unknown-linux-gnu";
+                      });
                     aarch64 =
                       let
-                        rustToolchain = pkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
+                        rustToolchain = linuxPkgs.aarch64.pkgsBuildHost.rust-bin.stable.latest.default.override {
                           targets = [
                             "aarch64-unknown-linux-gnu"
                           ];
@@ -323,26 +325,10 @@
                         };
                         craneLib = (crane.mkLib linuxPkgs.aarch64).overrideToolchain rustToolchain;
                       in
-                      craneLib.buildPackage (recursiveUpdate baseDrv { });
+                      craneLib.buildPackage (recursiveUpdate baseDrv {
+                        CARGO_BUILD_TARGET = "aarch64-unknown-linux-gnu";
+                      });
                   };
-                  windows =
-                    let
-                      rustToolchain = windowsPkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
-                        targets = [
-                          "x86_64-pc-windows-gnu"
-                        ];
-                      };
-                      rustPlatform = windowsPkgs.makeRustPlatform {
-                        rustc = rustToolchain;
-                        cargo = rustToolchain;
-                      };
-                      craneLib = (crane.mkLib windowsPkgs).overrideToolchain rustToolchain;
-                    in
-                    craneLib.buildPackage (recursiveUpdate baseDrv {
-                      CARGO_BUILD_TARGET = "x86_64-pc-windows-gnu";
-
-                      buildInputs = with windowsPkgs; [ stdenv.cc windows.pthreads ];
-                    });
                 };
 
               # ===== NELUA =====
