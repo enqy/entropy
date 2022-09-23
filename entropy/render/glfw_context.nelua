@@ -158,6 +158,10 @@ function GLFWContext:view(): WGPUTextureView <inline>
   return wgpuSwapChainGetCurrentTextureView(self.swapchain)
 end
 
+function GLFWContext:drop_view(view: WGPUTextureView): void <inline>
+  wgpuTextureViewDrop(view)
+end
+
 function GLFWContext:present(): void <inline>
   wgpuSwapChainPresent(self.swapchain)
 end

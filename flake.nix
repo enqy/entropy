@@ -492,10 +492,10 @@
                     xorg.libX11
                     xorg.libXrandr
                     wine64
-                    zig
                     vulkan-validation-layers
                     vulkan-tools
                     vulkan-tools-lunarg
+                    valgrind
                   ] ++ [
                     packages.nelua
                     packages."glfw/linux/x86_64"
