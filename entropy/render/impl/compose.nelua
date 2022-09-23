@@ -1,0 +1,22 @@
+local World = require "entropy.world"
+local Renderer = require "entropy.render.renderer"
+
+local Impl: type = @record{}
+## Impl.value.is_renderer_impl = true
+
+function Impl:init(renderer: a_renderer): void
+end
+
+function Impl:cleanup(renderer: a_renderer): void
+end
+
+function Impl:resize(renderer: a_renderer): void
+end
+
+function Impl:prepare(renderer: a_renderer, world: *World): void
+end
+
+function Impl:render(renderer: a_renderer, pass: WGPURenderPassEncoder, encoder: WGPUCommandEncoder, target: WGPUTextureView, world: *World): void
+end
+
+return Impl
