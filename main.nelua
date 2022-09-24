@@ -121,13 +121,14 @@ local Event = require "entropy.defs.event"
 local context: GLFWContext
 context:init("testing", 512, 512, true)
 
-local renderer: Renderer(ComposeImpl)
+local Impl = ComposeImpl
+local renderer: Renderer(Impl)
 renderer:init(context.device, context.format, context.width, context.height)
 
 -- setup resize callback
 context.user_pointer = &renderer
 context.resize_callback = function(user: pointer, width: uint32, height: uint32): void
-  local crenderer = (@*Renderer(BasicImpl))(user)
+  local crenderer = (@*Renderer(Impl))(user)
   crenderer:resize(width, height)
 end
 
