@@ -11,11 +11,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1663636104,
-        "narHash": "sha256-5ltv6Rig1CAWlbvs9eN1j7LsVOCOuh1tONqp+kBSvXw=",
+        "lastModified": 1664412889,
+        "narHash": "sha256-gyVtTQf3CiXLe1cwNRFxqUqYl9BCmIDvK7hIpzR/oQU=",
         "owner": "ipetkov",
         "repo": "crane",
-        "rev": "78f7d689fbce672ad5c0ed5ecc666ba508a7d7b8",
+        "rev": "755acd231a7de182fdc772bee1b2a1f21d4ec9ed",
         "type": "github"
       },
       "original": {
@@ -126,11 +126,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1663494472,
-        "narHash": "sha256-fSowlaoXXWcAM8m9wA6u+eTJJtvruYHMA+Lb/tFi/qM=",
+        "lastModified": 1664281702,
+        "narHash": "sha256-haixZ4TJLu1Dciow54wrHrHvlGDVr5sW6MTeAV/ZLuI=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "f677051b8dc0b5e2a9348941c99eea8c4b0ff28f",
+        "rev": "7e52b35fe98481a279d89f9c145f8076d049d2b9",
         "type": "github"
       },
       "original": {
@@ -163,11 +163,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1663642835,
-        "narHash": "sha256-xzIWFhLR7iws7ZIu5iHlbyY5bhGQTFECf+XKEjbjwpk=",
+        "lastModified": 1664420529,
+        "narHash": "sha256-hCSvJeoWZZbBTCR/QyazP+VzGHpuKfcgaPx2hQ90w7s=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "c9cfed9847475dcfc8b821d6ccb0c5229b4130a1",
+        "rev": "1601b5a28c50fd9d40bd61b8878f3499e09bce7a",
         "type": "github"
       },
       "original": {
@@ -179,11 +179,11 @@
     "wgpu-native": {
       "flake": false,
       "locked": {
-        "lastModified": 1661733128,
-        "narHash": "sha256-p+Tt60C5dURggbspyhMrp0572Winn6EinXHRxis/1Mw=",
+        "lastModified": 1664024941,
+        "narHash": "sha256-VlGs2cskdDo/pYELnwMZdgWNbKp8JRkil9KyaEmuDBc=",
         "ref": "refs/heads/master",
-        "rev": "5f9532af781e9e0af8449ad6a63a2286cc008395",
-        "revCount": 629,
+        "rev": "59541445992fe344d65c5edc60210db7f0771ff9",
+        "revCount": 630,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/gfx-rs/wgpu-native"
