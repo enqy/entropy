@@ -200,12 +200,12 @@
 
               wgpu-native =
                 let
-                  baseDrv = {
+                  baseDrv = rustPlatform: {
                     pname = "wgpu-native";
                     version = inputs.wgpu-native.shortRev;
                     src = inputs.wgpu-native;
 
-                    nativeBuildInputs = with pkgs; [
+                    nativeBuildInputs = [
                       rustPlatform.bindgenHook
                     ];
 
@@ -235,9 +235,13 @@
                             "x86_64-unknown-linux-gnu"
                           ];
                         };
+                        rustPlatform = linuxPkgs.x86_64.pkgsBuildHost.makeRustPlatform {
+                          rustc = rustToolchain;
+                          cargo = rustToolchain;
+                        };
                         craneLib = (crane.mkLib linuxPkgs.x86_64).overrideToolchain rustToolchain;
                       in
-                      craneLib.buildPackage (recursiveUpdate baseDrv {
+                      craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) {
                         CARGO_BUILD_TARGET = "x86_64-unknown-linux-gnu";
                       });
                     aarch64 =
@@ -247,10 +251,15 @@
                             "aarch64-unknown-linux-gnu"
                           ];
                         };
+                        rustPlatform = linuxPkgs.aarch64.pkgsBuildHost.makeRustPlatform {
+                          rustc = rustToolchain;
+                          cargo = rustToolchain;
+                        };
                         craneLib = (crane.mkLib linuxPkgs.aarch64).overrideToolchain rustToolchain;
                       in
-                      craneLib.buildPackage (recursiveUpdate baseDrv {
+                      craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) {
                         CARGO_BUILD_TARGET = "aarch64-unknown-linux-gnu";
+                        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "${linuxPkgs.aarch64.pkgsBuildHost.gcc}/bin/aarch64-unknown-linux-gnu-gcc";
                       });
                   };
                   windows =
@@ -260,9 +269,13 @@
                           "x86_64-pc-windows-gnu"
                         ];
                       };
+                      rustPlatform = windowsPkgs.pkgsBuildHost.makeRustPlatform {
+                        rustc = rustToolchain;
+                        cargo = rustToolchain;
+                      };
                       craneLib = (crane.mkLib windowsPkgs).overrideToolchain rustToolchain;
                     in
-                    craneLib.buildPackage (recursiveUpdate baseDrv {
+                    craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) {
                       CARGO_BUILD_TARGET = "x86_64-pc-windows-gnu";
 
                       buildInputs = with windowsPkgs; [ stdenv.cc windows.pthreads ];
