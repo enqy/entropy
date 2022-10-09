@@ -49,7 +49,7 @@
 
   outputs = inputs@{ self, nixpkgs, rust-overlay, flake-utils, gitignore, crane, ... }:
     let
-      inherit (nixpkgs.lib) recursiveUpdate recurseIntoAttrs optional;
+      inherit (nixpkgs.lib) recursiveUpdate recurseIntoAttrs;
       inherit (flake-utils.lib) eachSystem flattenTree;
       inherit (gitignore.lib) gitignoreSource;
     in
@@ -152,8 +152,7 @@
                     });
                   };
                   windows = windowsPkgs.stdenv.mkDerivation (recursiveUpdate (baseDrv [ windows-nelua ]) {
-                    buildInputs = with windowsPkgs; [
-                    ] ++ [
+                    buildInputs = [
                       glfw.windows
                       wgpu-native.windows
                     ];
@@ -236,10 +235,6 @@
                             "x86_64-unknown-linux-gnu"
                           ];
                         };
-                        rustPlatform = linuxPkgs.x86_64.makeRustPlatform {
-                          rustc = rustToolchain;
-                          cargo = rustToolchain;
-                        };
                         craneLib = (crane.mkLib linuxPkgs.x86_64).overrideToolchain rustToolchain;
                       in
                       craneLib.buildPackage (recursiveUpdate baseDrv {
@@ -251,10 +246,6 @@
                           targets = [
                             "aarch64-unknown-linux-gnu"
                           ];
-                        };
-                        rustPlatform = linuxPkgs.aarch64.makeRustPlatform {
-                          rustc = rustToolchain;
-                          cargo = rustToolchain;
                         };
                         craneLib = (crane.mkLib linuxPkgs.aarch64).overrideToolchain rustToolchain;
                       in
@@ -268,10 +259,6 @@
                         targets = [
                           "x86_64-pc-windows-gnu"
                         ];
-                      };
-                      rustPlatform = windowsPkgs.makeRustPlatform {
-                        rustc = rustToolchain;
-                        cargo = rustToolchain;
                       };
                       craneLib = (crane.mkLib windowsPkgs).overrideToolchain rustToolchain;
                     in
@@ -303,10 +290,6 @@
                             "x86_64-unknown-linux-gnu"
                           ];
                         };
-                        rustPlatform = linuxPkgs.x86_64.makeRustPlatform {
-                          rustc = rustToolchain;
-                          cargo = rustToolchain;
-                        };
                         craneLib = (crane.mkLib linuxPkgs.x86_64).overrideToolchain rustToolchain;
                       in
                       craneLib.buildPackage (recursiveUpdate baseDrv {
@@ -319,10 +302,6 @@
                             "aarch64-unknown-linux-gnu"
                           ];
                         };
-                        rustPlatform = linuxPkgs.aarch64.makeRustPlatform {
-                          rustc = rustToolchain;
-                          cargo = rustToolchain;
-                        };
                         craneLib = (crane.mkLib linuxPkgs.aarch64).overrideToolchain rustToolchain;
                       in
                       craneLib.buildPackage (recursiveUpdate baseDrv {
@@ -333,7 +312,7 @@
 
               # ===== NELUA =====
               nelua =
-                pkgs.stdenv.mkDerivation rec {
+                pkgs.stdenv.mkDerivation {
                   pname = "nelua";
                   version = inputs.nelua.shortRev;
                   src = inputs.nelua;
