@@ -80,10 +80,12 @@
                   overlays = [ (import rust-overlay) ];
                 };
               };
-              windowsPkgs = import nixpkgs {
-                localSystem = system;
-                crossSystem = { config = "x86_64-w64-mingw32"; };
-                overlays = [ (import rust-overlay) ];
+              windowsPkgs = {
+                x86_64 = import nixpkgs {
+                  localSystem = system;
+                  crossSystem = { config = "x86_64-w64-mingw32"; };
+                  overlays = [ (import rust-overlay) ];
+                };
               };
             in
             flattenTree rec {
@@ -151,17 +153,19 @@
                       ];
                     });
                   };
-                  windows = windowsPkgs.stdenv.mkDerivation (recursiveUpdate (baseDrv [ windows-nelua ]) {
-                    buildInputs = [
-                      glfw.windows
-                      wgpu-native.windows
-                    ];
+                  windows = recurseIntoAttrs {
+                    x86_64 = windowsPkgs.x86_64.stdenv.mkDerivation (recursiveUpdate (baseDrv [ windows-nelua ]) {
+                      buildInputs = [
+                        glfw.windows.x86_64
+                        wgpu-native.windows.x86_64
+                      ];
 
-                    postInstall = ''
-                      cp ${glfw.windows}/bin/glfw3.dll $out/bin
-                      cp ${wgpu-native.windows}/lib/wgpu_native.dll $out/bin
-                    '';
-                  });
+                      postInstall = ''
+                        cp ${glfw.windows.x86_64}/bin/glfw3.dll $out/bin
+                        cp ${wgpu-native.windows.x86_64}/lib/wgpu_native.dll $out/bin
+                      '';
+                    });
+                  };
                 };
 
               # ===== REQUIRED LIBS/BUILD STUFF BELOW =====
@@ -190,12 +194,14 @@
                       buildInputs = with linuxPkgs.aarch64; [ xorg.libX11 xorg.libXrandr xorg.libXinerama xorg.libXcursor xorg.libXi xorg.libXext ];
                     });
                   };
-                  windows = windowsPkgs.stdenv.mkDerivation (recursiveUpdate baseDrv {
-                    # this is needed because some compilers look for .lib files to link for when compiling for windows
-                    postInstall = ''
-                      ln -fs $out/lib/libglfw3dll.a $out/lib/glfw3.lib
-                    '';
-                  });
+                  windows = recurseIntoAttrs {
+                    x86_64 = windowsPkgs.x86_64.stdenv.mkDerivation (recursiveUpdate baseDrv {
+                      # this is needed because some compilers look for .lib files to link for when compiling for windows
+                      postInstall = ''
+                        ln -fs $out/lib/libglfw3dll.a $out/lib/glfw3.lib
+                      '';
+                    });
+                  };
                 };
 
               wgpu-native =
@@ -262,24 +268,26 @@
                         CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "${linuxPkgs.aarch64.pkgsBuildHost.gcc}/bin/aarch64-unknown-linux-gnu-gcc";
                       });
                   };
-                  windows =
-                    let
-                      rustToolchain = windowsPkgs.pkgsBuildHost.rust-bin.stable.latest.default.override {
-                        targets = [
-                          "x86_64-pc-windows-gnu"
-                        ];
-                      };
-                      rustPlatform = windowsPkgs.pkgsBuildHost.makeRustPlatform {
-                        rustc = rustToolchain;
-                        cargo = rustToolchain;
-                      };
-                      craneLib = (crane.mkLib windowsPkgs).overrideToolchain rustToolchain;
-                    in
-                    craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) {
-                      CARGO_BUILD_TARGET = "x86_64-pc-windows-gnu";
+                  windows = recurseIntoAttrs {
+                    x86_64 =
+                      let
+                        rustToolchain = windowsPkgs.x86_64.pkgsBuildHost.rust-bin.stable.latest.default.override {
+                          targets = [
+                            "x86_64-pc-windows-gnu"
+                          ];
+                        };
+                        rustPlatform = windowsPkgs.x86_64.pkgsBuildHost.makeRustPlatform {
+                          rustc = rustToolchain;
+                          cargo = rustToolchain;
+                        };
+                        craneLib = (crane.mkLib windowsPkgs.x86_64).overrideToolchain rustToolchain;
+                      in
+                      craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) {
+                        CARGO_BUILD_TARGET = "x86_64-pc-windows-gnu";
 
-                      buildInputs = with windowsPkgs; [ stdenv.cc windows.pthreads ];
-                    });
+                        buildInputs = with windowsPkgs.x86_64; [ stdenv.cc windows.pthreads ];
+                      });
+                  };
                 };
               naga =
                 let
