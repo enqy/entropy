@@ -121,7 +121,7 @@ local Event = require "entropy.defs.event"
 local context: GLFWContext
 context:init("testing", 512, 512, true)
 
-local Impl = ComposeImpl
+local Impl = BasicImpl
 local renderer: Renderer(Impl)
 renderer:init(context.device, context.format, context.width, context.height)
 
