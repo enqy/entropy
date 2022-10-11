@@ -43,8 +43,9 @@ local World = require "entropy.world"
       sampleCount = 1,
       dimension = WGPUTextureDimension_2D,
       usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_TextureBinding,
-      format = WGPUTextureFormat_Depth24PlusStencil8,
+      format = WGPUTextureFormat_Depth32Float,
     })
+    print(self.depth_buffer)
 
     self.impl:init(self)
   end
@@ -72,7 +73,7 @@ local World = require "entropy.world"
       sampleCount = 1,
       dimension = WGPUTextureDimension_2D,
       usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_TextureBinding,
-      format = WGPUTextureFormat_Depth24PlusStencil8,
+      format = WGPUTextureFormat_Depth32Float,
     })
 
     self.impl:resize(self)
@@ -84,7 +85,7 @@ local World = require "entropy.world"
 
   function RendererImplT:depth_stencil_view(): WGPUTextureView
     return wgpuTextureCreateView(self.depth_buffer, &(@WGPUTextureViewDescriptor){
-      format = WGPUTextureFormat_Depth24PlusStencil8,
+      format = WGPUTextureFormat_Depth32Float,
       dimension = WGPUTextureViewDimension_2D,
       aspect = WGPUTextureAspect_All,
       baseMipLevel = 0,

@@ -170,7 +170,7 @@ function Impl:init(renderer: a_renderer): void
       alphaToCoverageEnabled = false,
     },
     depthStencil = &(@WGPUDepthStencilState){
-      format = WGPUTextureFormat_Depth24PlusStencil8,
+      format = WGPUTextureFormat_Depth32Float,
       depthWriteEnabled = true,
       depthCompare = WGPUCompareFunction_Less,
       stencilFront = (@WGPUStencilFaceState){
@@ -185,8 +185,8 @@ function Impl:init(renderer: a_renderer): void
         depthFailOp = WGPUStencilOperation_Keep,
         passOp = WGPUStencilOperation_Keep,
       },
-      stencilReadMask = 0xffffffff,
-      stencilWriteMask = 0xffffffff,
+      stencilReadMask = 0x0,
+      stencilWriteMask = 0x0,
     },
   }
   self.pipeline = wgpuDeviceCreateRenderPipeline(renderer.device, &pipeline_descriptor)
