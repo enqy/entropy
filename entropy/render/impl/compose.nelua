@@ -1,22 +1,46 @@
 local World = require "entropy.world"
 local Renderer = require "entropy.render.renderer"
 
-local Impl: type = @record{}
-## Impl.value.is_renderer_impl = true
+## function ComposeImpl(Impls)
+  local Impl: type = @record{}
+  ## Impl.value.is_renderer_impl = true
 
-function Impl:init(renderer: a_renderer): void
-end
+  ##[[
+  for i=1, #Impls do
+    static_assert(Impls[i].value.is_renderer_impl, "passed in type %s is not a renderer implementation!", Impls[i].value)
+    Impl.value:add_field('_' .. i, Impls[i].value)
+  end
+  ]]
 
-function Impl:cleanup(renderer: a_renderer): void
-end
+  function Impl:init(renderer: a_renderer): void
+    ## for i=1, #Impls do
+      self.#|'_' .. i|#:init(renderer)
+    ## end
+  end
 
-function Impl:resize(renderer: a_renderer): void
-end
+  function Impl:cleanup(renderer: a_renderer): void
+    ## for i=1, #Impls do
+      self.#|'_' .. i|#:cleanup(renderer)
+    ## end
+  end
 
-function Impl:prepare(renderer: a_renderer, world: *World): void
-end
+  function Impl:resize(renderer: a_renderer): void
+    ## for i=1, #Impls do
+      self.#|'_' .. i|#:resize(renderer)
+    ## end
+  end
 
-function Impl:render(renderer: a_renderer, pass: WGPURenderPassEncoder, encoder: WGPUCommandEncoder, target: WGPUTextureView, world: *World): void
-end
+  function Impl:prepare(renderer: a_renderer, world: *World): void
+    ## for i=1, #Impls do
+      self.#|'_' .. i|#:prepare(renderer, world)
+    ## end
+  end
 
-return Impl
+  function Impl:render(renderer: a_renderer, pass: WGPURenderPassEncoder, encoder: WGPUCommandEncoder, target: WGPUTextureView, world: *World): void
+    ## for i=1, #Impls do
+      self.#|'_' .. i|#:render(renderer, pass, encoder, target, world)
+    ## end
+  end
+
+  ## return Impl
+## end
