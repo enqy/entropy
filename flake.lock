@@ -11,11 +11,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1665281413,
-        "narHash": "sha256-6iPWH9BYWozMJgJ51zV5jit0dfOn01aFqzhfx++gZvs=",
+        "lastModified": 1665356181,
+        "narHash": "sha256-ONEzlKL5LN4Y1TRfFY6C39G2Am1YFEjArwMYJONFhhs=",
         "owner": "ipetkov",
         "repo": "crane",
-        "rev": "37def1e9c317dba1c7def2f7c011bb09f2645e5d",
+        "rev": "d78cb0453b9823d2102f7b22bb98686215462416",
         "type": "github"
       },
       "original": {
@@ -163,11 +163,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1665284400,
-        "narHash": "sha256-t+HKmYgXPfOduswQGtXDUVHqcAyOw/WUUUEMN/m4LKU=",
+        "lastModified": 1665457114,
+        "narHash": "sha256-Rtut6Q81u1pDS3Y44Syhy436IrESmvPCdGDtl47E4eo=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "440a5c8ba3d025a8e3f787ebd7e7b8091964e064",
+        "rev": "5066af8707c4b598ad2dbfb2fdac73714bee3438",
         "type": "github"
       },
       "original": {
@@ -179,11 +179,11 @@
     "wgpu-native": {
       "flake": false,
       "locked": {
-        "lastModified": 1664024941,
-        "narHash": "sha256-VlGs2cskdDo/pYELnwMZdgWNbKp8JRkil9KyaEmuDBc=",
+        "lastModified": 1665463753,
+        "narHash": "sha256-i0YCm9Z1DbAHx7nRE72tPNRRW5IFLc+66EC13bCCZV8=",
         "ref": "refs/heads/master",
-        "rev": "59541445992fe344d65c5edc60210db7f0771ff9",
-        "revCount": 630,
+        "rev": "f8d2479a3f2e1001047d1d07c3a4034554874e08",
+        "revCount": 631,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/gfx-rs/wgpu-native"
