@@ -67,6 +67,10 @@ require "vector"
     return &self.data[ptr]
   end
 
+  function StorageT.__len(self: *StorageT): int64 <inline>
+    return #self.data - #self.free
+  end
+
   function StorageT.__mnext(self: *StorageT, ctrl_var: isize): (boolean, isize, *T) <inline>
     ctrl_var = ctrl_var + 1
 

@@ -146,7 +146,7 @@ local camera_idx = cameras:create({
   fov = 90,
 
   z_near = 0.1,
-  z_far = 100,
+  z_far = 10000,
 })
 cameras[camera_idx]:look_at({ 0, 0, 0 })
 
@@ -155,17 +155,27 @@ local meshes = world:s("entropy.scene.meshes", Mesh)
 local cube_mesh_idx = meshes:create(Mesh.load_from_obj("./cube.obj"))
 local cube_mesh = &meshes[cube_mesh_idx]
 cube_mesh:init(world, "cube")
-cube_mesh:prepare(renderer)
+
+local count: isize <const> = 300
 
 local instances = world:s("entropy.scene.meshes.cube", Mesh.Instance)
-for y=-6,<=6 do
-  for x=-6,<=6 do
-    for z=-6,<=6 do
+for y=-count,<count do
+  for x=-count,<count do
+    local instance_idx = instances:create(cube_mesh:instance())
+    instances[instance_idx].transform = (Mat4.from_pos({ x * 5, 0, y * 5 }) * Mat4.from_scl({ 1, 1, 1 })):transpose()
+    --[[
+    for z=-count,<count do
       local instance_idx = instances:create(cube_mesh:instance())
-      instances[instance_idx].transform = Mat4.from_pos({ x * 5, z * 5, y * 5 }) * Mat4.from_scl({ x, y, z })
+      instances[instance_idx].transform = (Mat4.from_pos({ x * 5, z * 5, y * 5 }) * Mat4.from_scl({ 1, 1, 1 })):transpose()
     end
+    ]]
   end
 end
+
+local instance_idx = instances:create(cube_mesh:instance())
+instances[instance_idx].transform = (Mat4.from_pos({ 0, -1, 0 }) * Mat4.from_scl({ 1000, 0.1, 1000 })):transpose()
+
+cube_mesh:prepare(renderer)
 
 local fps_list: vector(float64)
 
@@ -175,6 +185,7 @@ local is_left_pressed = false
 local is_right_pressed = false
 local is_up_pressed = false
 local is_down_pressed = false
+local is_speed_pressed = false
 
 local camera_yaw = 0.0
 local camera_pitch = 0.0
@@ -216,6 +227,8 @@ while not context:should_close() do
           is_up_pressed = state
         elseif event.data.Key.key == 340 then
           is_down_pressed = state
+        elseif event.data.Key.key == 341 then
+          is_speed_pressed = state
         end
       elseif event.type == Event.Type.MouseMotion then
         local mouse_dx = event.data.MouseMotion.x - last_mouse_x
@@ -234,28 +247,34 @@ while not context:should_close() do
   end
 
   -- update
+  local speed = 1
+  if is_speed_pressed then
+    speed = 10
+  end
   if is_forward_pressed then
-    cameras[camera_idx].pos = cameras[camera_idx].pos + cameras[camera_idx].rot:scale(1)
+    cameras[camera_idx].pos = cameras[camera_idx].pos + cameras[camera_idx].rot:scale(speed)
   end
   if is_backward_pressed then
-    cameras[camera_idx].pos = cameras[camera_idx].pos - cameras[camera_idx].rot:scale(1)
+    cameras[camera_idx].pos = cameras[camera_idx].pos - cameras[camera_idx].rot:scale(speed)
   end
   if is_left_pressed then
-    cameras[camera_idx].pos = cameras[camera_idx].pos - cameras[camera_idx].rot:cross({0, 1, 0}):norm():scale(1)
+    cameras[camera_idx].pos = cameras[camera_idx].pos - cameras[camera_idx].rot:cross({0, 1, 0}):norm():scale(speed)
   end
   if is_right_pressed then
-    cameras[camera_idx].pos = cameras[camera_idx].pos + cameras[camera_idx].rot:cross({0, 1, 0}):norm():scale(1)
+    cameras[camera_idx].pos = cameras[camera_idx].pos + cameras[camera_idx].rot:cross({0, 1, 0}):norm():scale(speed)
   end
   if is_up_pressed then
-    cameras[camera_idx].pos = cameras[camera_idx].pos + {0, 1, 0}
+    cameras[camera_idx].pos = cameras[camera_idx].pos + {0, speed, 0}
   end
   if is_down_pressed then
-    cameras[camera_idx].pos = cameras[camera_idx].pos - {0, 1, 0}
+    cameras[camera_idx].pos = cameras[camera_idx].pos - {0, speed, 0}
   end
 
+  --[[
   for _, instance in mpairs(instances) do
     instance.transform = instance.transform * Mat4.from_rot(0.01, { 0, 0, 1 }) * Mat4.from_rot(0.01, { 1, 0, 0 })
   end
+  ]]
 
   -- render
   local view = context:view()

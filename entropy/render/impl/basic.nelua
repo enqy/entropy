@@ -52,6 +52,33 @@ function Impl:init(renderer: a_renderer): void
         },
       },
     },
+    {
+      arrayStride = #Mesh.Instance,
+      stepMode = WGPUVertexStepMode_Instance,
+      attributeCount = 4, -- stupid hack because mat4x4 doesn't exist as a vertex format
+      attributes = &(@[]WGPUVertexAttribute){
+        {
+          shaderLocation = 5,
+          offset = 0,
+          format = WGPUVertexFormat_Float32x4,
+        },
+        {
+          shaderLocation = 6,
+          offset = 16,
+          format = WGPUVertexFormat_Float32x4,
+        },
+        {
+          shaderLocation = 7,
+          offset = 32,
+          format = WGPUVertexFormat_Float32x4,
+        },
+        {
+          shaderLocation = 8,
+          offset = 48,
+          format = WGPUVertexFormat_Float32x4,
+        },
+      },
+    },
   }
   local vertex = (@WGPUVertexState){
     module = vs_shader.module,
@@ -233,13 +260,19 @@ function Impl:render(renderer: a_renderer, pass: WGPURenderPassEncoder, encoder:
 
   local meshes = world:s("entropy.scene.meshes", Mesh)
   for id, mesh in mpairs(meshes) do
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, mesh.vertex_buffer, 0, 0)
+    wgpuRenderPassEncoderSetIndexBuffer(pass, mesh.index_buffer, WGPUIndexFormat_Uint32, 0)
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 1, mesh.instance_buffer, 0, 0)
+
+    wgpuRenderPassEncoderDrawIndexed(pass, #mesh.indices, #mesh.instances, 0, 0, 0)
+
+    --[[
     for _, instance in mpairs(mesh.instances) do
-      wgpuRenderPassEncoderSetVertexBuffer(pass, 0, mesh.vertex_buffer, 0, 0)
-      wgpuRenderPassEncoderSetIndexBuffer(pass, mesh.index_buffer, WGPUIndexFormat_Uint32, 0)
       local model = instance.transform:transpose()
       wgpuRenderPassEncoderSetPushConstants(pass, WGPUShaderStage_Vertex, 0, #Mat4, &model)
       wgpuRenderPassEncoderDrawIndexed(pass, #mesh.indices, 1, 0, 0, 0)
     end
+    ]]
 
     --[[
     wgpuRenderPassEncoderSetVertexBuffer(pass, 0, mesh.vertex_buffer, 0, 0)

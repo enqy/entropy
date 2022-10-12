@@ -489,13 +489,14 @@
                 nativeBuildInputs = with pkgs;
                   [
                     gcc
-                    xorg.libX11
-                    xorg.libXrandr
-                    wine64
-                    vulkan-validation-layers
+                    renderdoc
+                    valgrind
                     vulkan-tools
                     vulkan-tools-lunarg
-                    valgrind
+                    vulkan-validation-layers
+                    wine64
+                    xorg.libX11
+                    xorg.libXrandr
                   ] ++ [
                     packages.nelua
                     packages."glfw/linux/x86_64"
