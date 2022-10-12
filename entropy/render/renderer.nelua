@@ -45,7 +45,6 @@ local World = require "entropy.world"
       usage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_TextureBinding,
       format = WGPUTextureFormat_Depth32Float,
     })
-    print(self.depth_buffer)
 
     self.impl:init(self)
   end

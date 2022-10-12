@@ -1,11 +1,13 @@
 require "wgpu"
 
 local World = require "entropy.world"
+local Storage =  require "entropy.world.storage"
 local Renderer = require "entropy.render.renderer"
 local Shader = require "entropy.render.shader"
 local Mat4 = require "entropy.math.mat4"
 local Vec4 = require "entropy.math.vec4"
 local Mesh = require "entropy.scene.mesh"
+local Camera = require "entropy.scene.camera"
 
 require "memory"
 
@@ -212,7 +214,7 @@ end
 
 function Impl:render(renderer: a_renderer, pass: WGPURenderPassEncoder, encoder: WGPUCommandEncoder, target: WGPUTextureView, world: *World): void
   -- get primary camera
-  local camera = world:s("entropy.scene.cameras")[0]
+  local camera = world:s("entropy.scene.cameras", Camera)[0]
   local view = camera:view_matrix()
   local proj = camera:proj_matrix(renderer.target_config.width, renderer.target_config.height)
 
@@ -229,13 +231,23 @@ function Impl:render(renderer: a_renderer, pass: WGPURenderPassEncoder, encoder:
   wgpuRenderPassEncoderSetPipeline(pass, self.pipeline)
   wgpuRenderPassEncoderSetBindGroup(pass, 0, self.globals_bind_group, 0, nilptr)
 
-  local meshes = world:s("entropy.scene.meshes")
+  local meshes = world:s("entropy.scene.meshes", Mesh)
   for id, mesh in mpairs(meshes) do
+    for _, instance in mpairs(mesh.instances) do
+      wgpuRenderPassEncoderSetVertexBuffer(pass, 0, mesh.vertex_buffer, 0, 0)
+      wgpuRenderPassEncoderSetIndexBuffer(pass, mesh.index_buffer, WGPUIndexFormat_Uint32, 0)
+      local model = instance.transform:transpose()
+      wgpuRenderPassEncoderSetPushConstants(pass, WGPUShaderStage_Vertex, 0, #Mat4, &model)
+      wgpuRenderPassEncoderDrawIndexed(pass, #mesh.indices, 1, 0, 0, 0)
+    end
+
+    --[[
     wgpuRenderPassEncoderSetVertexBuffer(pass, 0, mesh.vertex_buffer, 0, 0)
     wgpuRenderPassEncoderSetIndexBuffer(pass, mesh.index_buffer, WGPUIndexFormat_Uint32, 0)
     local model = mesh.transform:transpose()
     wgpuRenderPassEncoderSetPushConstants(pass, WGPUShaderStage_Vertex, 0, #Mat4, &model)
     wgpuRenderPassEncoderDrawIndexed(pass, #mesh.indices, 1, 0, 0, 0)
+    ]]
   end
 end
 

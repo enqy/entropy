@@ -1,6 +1,7 @@
 require "wgpu"
 
 local World = require "entropy.world"
+local Storage = require "entropy.world.storage"
 local Vec2 = require "entropy.math.vec2"
 local Vec3 = require "entropy.math.vec3"
 local Vec4 = require "entropy.math.vec4"
@@ -15,7 +16,13 @@ local Vertex: type = @record{
   uv: Vec2,
 }
 
+local Instance: type = @record{
+  transform: Mat4,
+}
+
 local Mesh: type = @record{
+  instances: *Storage(Instance),
+
   transform: Mat4,
 
   vertices: vector(Vertex),
@@ -25,6 +32,7 @@ local Mesh: type = @record{
   index_buffer: WGPUBuffer,
 }
 local Mesh.Vertex = Vertex
+local Mesh.Instance = Instance
 
 function Mesh.load_from_obj(path: string): Mesh
   local result: Mesh
@@ -60,13 +68,17 @@ function Mesh.load_from_obj(path: string): Mesh
   return result
 end
 
-function Mesh:clone(): Mesh
-  local result: Mesh
+function Mesh:init(world: *World, id: string <comptime>)
+  ## local a = "entropy.scene.meshes." .. id.value
+  World.r(#[a]#, Instance)
 
-  result.vertices = self.vertices
-  result.indices = self.indices
+  self.instances = (@*Storage(Instance))(world:s(#[a]#, Instance))
+end
 
-  return result
+function Mesh:instance(): Mesh.Instance
+  return {
+    transform = self.transform
+  }
 end
 
 function Mesh:cleanup()
