@@ -23,3 +23,6 @@ jobs:
 
       - name: Run Build (Linux aarch64)
         run: nix build .#game/linux/aarch64
+
+      - name: Run Build (Windows x86_64)
+        run: nix build .#game/windows/x86_64
