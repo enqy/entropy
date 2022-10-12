@@ -9,25 +9,37 @@ function World.r(name: string <comptime>, T: type): void <inline>
   ##[[
   local sname = name.value:gsub("%.", "___")
   if World.value.storages[name.value] == nil then
-    World.value:add_field(sname, make_StorageT(name.value, T.value).value)
+    World.value:add_field(sname, make_StorageT(T.value).value)
     World.value.storages[name.value] = T.value
   else
-    static_error("storage %s already registered for type %s!", name.value, World.value.storages[name.value])
+    if World.value.storages[name.value] ~= T.value then
+      print("storage: ", name.value, " was already registered for type: ", World.value.storages[name.value])
+      print("storage: ", name.value, " is being registered for type: ", T.value)
+      static_error("storage: `%s` was already registered for type: `%s` and is being registered with type: `%s`", name.value, World.value.storages[name.value], T.value)
+    end
   end
   ]]
 end
 
 -- get a reference to a storage
-function World:s(name: string <comptime>): auto <inline>
-  ## local sname = name.value:gsub("%.", "___")
-  ## static_assert(World.value.storages[name.value] ~= nil, "storage %s is not registered for a type!", name.value)
+function World:s(name: string <comptime>, T: type): auto <inline>
+  ##[[
+  local sname = name.value:gsub("%.", "___")
+  -- static_assert(World.value.storages[name.value] ~= nil, "storage %s is not registered for a type!", name.value)
+  if World.value.storages[name.value] == nil then
+    print("storage: ", name.value, " is not registered for a type! Registering with type: ", T.value)
+    World.value:add_field(sname, make_StorageT(T.value).value)
+    World.value.storages[name.value] = T.value
+  else
+    if World.value.storages[name.value] ~= T.value then
+      print("storage: ", name.value, " was registered for type: ", World.value.storages[name.value])
+      print("storage: ", name.value, " is being accessed with type: ", T.value)
+      static_error("storage: `%s` was registered for type: `%s` and is being accessed with type: `%s`", name.value, World.value.storages[name.value], T.value)
+    end
+  end
+  ]]
 
   return &self.#|sname|#
-end
-
-global function check_storage(name: string <comptime>, T: type): void <inline>
-  ## static_assert(World.value.storages[name.value] ~= nil, "storage %s is not registered for a type!", name.value)
-  ## static_assert(World.value.storages[name.value] == T.value, "storage %s is registered for a different type %s, rather than %s!", name.value, World.value.storages[name.value], T.value)
 end
 
 function World:now(): number <inline>

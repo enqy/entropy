@@ -1,7 +1,7 @@
 require "vector"
 
 -- there is a workaround here to get the compiler to generate valid c code by manually creating methods with . instead of :
-## function make_StorageT(name, T)
+## function make_StorageT(T)
   ## static_assert(traits.is_type(T), "invalid type '%s'", T)
   local T: type = @#[T]#
 
@@ -12,8 +12,6 @@ require "vector"
     free: vector(usize),
   }
 
-  ## StorageT.value.world_name = name
-
   function StorageT.reserve(self: *StorageT, n: usize): void
     if self.data:capacity() < n then
       self.data:reserve(n)
@@ -21,7 +19,7 @@ require "vector"
     end
   end
 
-  function StorageT.create(self: *StorageT, item: T): Pointer(name, T) <inline>
+  function StorageT.create(self: *StorageT, item: T): Pointer(T) <inline>
     if #self.free > 0 then
       local id = self.free:pop()
 
@@ -44,7 +42,7 @@ require "vector"
     end
   end
 
-  function StorageT.pin(self: *StorageT, ptr: Pointer(name, T)): Pointer(name, T) <inline>
+  function StorageT.pin(self: *StorageT, ptr: Pointer(T)): Pointer(T) <inline>
     check(ptr < #self.data, "invalid ptr!")
     check(self.refs[ptr] > 0, "dead ptr!")
 
@@ -52,7 +50,7 @@ require "vector"
     return ptr
   end
 
-  function StorageT.unpin(self: *StorageT, ptr: Pointer(name, T)): void <inline>
+  function StorageT.unpin(self: *StorageT, ptr: Pointer(T)): void <inline>
     check(ptr < #self.data, "invalid ptr!")
     check(self.refs[ptr] > 0, "dead ptr!")
 
@@ -62,7 +60,7 @@ require "vector"
     end
   end
 
-  function StorageT.__atindex(self: *StorageT, ptr: Pointer(name, T)): *T <inline>
+  function StorageT.__atindex(self: *StorageT, ptr: Pointer(T)): *T <inline>
     check(ptr < #self.data, "invalid ptr!")
     check(self.refs[ptr] > 0, "dead ptr!")
 
