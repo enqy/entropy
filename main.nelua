@@ -25,17 +25,17 @@ end
 ## end)
 
 local Entity = @record{
-  pos: P("positions", Vec2),
-  vel: P("velocities", Vec2),
+  pos: P(Vec2),
+  vel: P(Vec2),
 }
 
 World.r("entities", Entity)
 
-local positions = world:s("positions")
+local positions = world:s("positions", Vec2)
 positions:reserve(10010)
-local velocities = world:s("velocities")
+local velocities = world:s("velocities", Vec2)
 velocities:reserve(10010)
-local entities = world:s("entities")
+local entities = world:s("entities", Entity)
 entities:reserve(10010)
 
 for i=0,<10 do
@@ -138,7 +138,7 @@ context.resize_callback = function(user: pointer, width: uint32, height: uint32)
 end
 
 -- setup camera
-local cameras = world:s("entropy.scene.cameras")
+local cameras = world:s("entropy.scene.cameras", Camera)
 local camera_idx = cameras:create({
   pos = { 10, 10, 10 },
   rot = { 0, 0, 0 },
@@ -151,15 +151,18 @@ local camera_idx = cameras:create({
 cameras[camera_idx]:look_at({ 0, 0, 0 })
 
 -- load meshes
-local cube_mesh = Mesh.load_from_obj("./cube.obj")
+local meshes = world:s("entropy.scene.meshes", Mesh)
+local cube_mesh_idx = meshes:create(Mesh.load_from_obj("./cube.obj"))
+local cube_mesh = &meshes[cube_mesh_idx]
+cube_mesh:init(world, "cube")
+cube_mesh:prepare(renderer)
 
-local meshes = world:s("entropy.scene.meshes")
-for y=-3,<=3 do
-  for x=-3,<=3 do
-    for z=-3,<=3 do
-      local mesh_idx = meshes:create(cube_mesh:clone())
-      meshes[mesh_idx]:prepare(renderer)
-      meshes[mesh_idx].transform = Mat4.from_pos({ x * 5, z * 5, y * 5 }) * Mat4.from_scl({ x, y, z })
+local instances = world:s("entropy.scene.meshes.cube", Mesh.Instance)
+for y=-6,<=6 do
+  for x=-6,<=6 do
+    for z=-6,<=6 do
+      local instance_idx = instances:create(cube_mesh:instance())
+      instances[instance_idx].transform = Mat4.from_pos({ x * 5, z * 5, y * 5 }) * Mat4.from_scl({ x, y, z })
     end
   end
 end
@@ -250,8 +253,8 @@ while not context:should_close() do
     cameras[camera_idx].pos = cameras[camera_idx].pos - {0, 1, 0}
   end
 
-  for _, mesh in mpairs(meshes) do
-    mesh.transform = mesh.transform * Mat4.from_rot(0.01, { 0, 0, 1 }) * Mat4.from_rot(0.01, { 1, 0, 0 })
+  for _, instance in mpairs(instances) do
+    instance.transform = instance.transform * Mat4.from_rot(0.01, { 0, 0, 1 }) * Mat4.from_rot(0.01, { 1, 0, 0 })
   end
 
   -- render
