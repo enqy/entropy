@@ -156,24 +156,20 @@ local cube_mesh_idx = meshes:create(Mesh.load_from_obj("./cube.obj"))
 local cube_mesh = &meshes[cube_mesh_idx]
 cube_mesh:init(world, "cube")
 
-local count: isize <const> = 300
+local count: isize <const> = 50
 
 local instances = world:s("entropy.scene.meshes.cube", Mesh.Instance)
 for y=-count,<count do
   for x=-count,<count do
-    local instance_idx = instances:create(cube_mesh:instance())
-    instances[instance_idx].transform = (Mat4.from_pos({ x * 5, 0, y * 5 }) * Mat4.from_scl({ 1, 1, 1 })):transpose()
-    --[[
     for z=-count,<count do
       local instance_idx = instances:create(cube_mesh:instance())
       instances[instance_idx].transform = (Mat4.from_pos({ x * 5, z * 5, y * 5 }) * Mat4.from_scl({ 1, 1, 1 })):transpose()
     end
-    ]]
   end
 end
 
 local instance_idx = instances:create(cube_mesh:instance())
-instances[instance_idx].transform = (Mat4.from_pos({ 0, -1, 0 }) * Mat4.from_scl({ 1000, 0.1, 1000 })):transpose()
+instances[instance_idx].transform = (Mat4.from_pos({ 0, -(count * 5 + 10), 0 }) * Mat4.from_scl({ count * 10, 0.1, count * 10 })):transpose()
 
 cube_mesh:prepare(renderer)
 
@@ -234,8 +230,9 @@ while not context:should_close() do
         local mouse_dx = event.data.MouseMotion.x - last_mouse_x
         local mouse_dy = event.data.MouseMotion.y - last_mouse_y
 
-        camera_yaw = camera_yaw + math.rad(mouse_dx) * 0.2
-        camera_pitch = math.clamp(camera_pitch + math.rad(mouse_dy) * 0.2, (-math.pi / 2) + 0.0001, (math.pi / 2) - 0.0001)
+        local sensitivity = 0.2
+        camera_yaw = camera_yaw + math.rad(mouse_dx) * sensitivity
+        camera_pitch = math.clamp(camera_pitch + math.rad(mouse_dy) * sensitivity, (-math.pi / 2) + 0.0001, (math.pi / 2) - 0.0001)
 
         local camera = &cameras[camera_idx]
         camera.rot = (@Vec3)({ math.cos(camera_yaw) * math.cos(camera_pitch), -math.sin(camera_pitch), math.sin(camera_yaw) * math.cos(camera_pitch) }):norm()

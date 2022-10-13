@@ -276,7 +276,7 @@
                             "x86_64-pc-windows-gnu"
                           ];
                         };
-                        rustPlatform = windowsPkgs.x86_64.pkgsBuildHost.makeRustPlatform {
+                        rustPlatform = pkgs.makeRustPlatform {
                           rustc = rustToolchain;
                           cargo = rustToolchain;
                         };
@@ -289,6 +289,7 @@
                       });
                   };
                 };
+
               naga =
                 let
                   baseDrv = {
