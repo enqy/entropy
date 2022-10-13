@@ -2,6 +2,7 @@ require "wgpu"
 
 local World = require "entropy.world"
 local Storage = require "entropy.world.storage"
+local Renderer = require "entropy.render.renderer"
 local Vec2 = require "entropy.math.vec2"
 local Vec3 = require "entropy.math.vec3"
 local Vec4 = require "entropy.math.vec4"
@@ -19,6 +20,12 @@ local Vertex: type = @record{
 local Instance: type = @record{
   transform: Mat4,
 }
+
+function Instance:raw(): Instance
+  return {
+    transform = self.transform:transpose(),
+  }
+end
 
 local Mesh: type = @record{
   instances: *Storage(Instance),
@@ -123,16 +130,35 @@ function Mesh:prepare(renderer: a_renderer)
     renderer.device,
     &(@WGPUBufferDescriptor){
       label = "mesh instance buffer",
-      usage = WGPUBufferUsage_Vertex,
+      usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst,
       size = #Mesh.Instance * #self.instances,
       mappedAtCreation = true,
     }
   )
   local instance_buffer_mapped = (@*[0]Mesh.Instance)(wgpuBufferGetMappedRange(self.instance_buffer, 0, #Mesh.Instance * #self.instances))
   for i = 0, #self.instances - 1 do
-    instance_buffer_mapped[i] = self.instances[i]
+    instance_buffer_mapped[i] = self.instances[i]:raw()
   end
   wgpuBufferUnmap(self.instance_buffer)
+end
+
+require 'allocators.default'
+
+function Mesh:update(renderer: a_renderer)
+  -- reupload instance buffer
+  local instances_ptr = default_allocator:alloc(#Mesh.Instance * #self.instances)
+  local instances: *[0]Mesh.Instance = (@*[0]Mesh.Instance)(instances_ptr)
+  for i = 0, #self.instances - 1 do
+    instances[i] = (self.instances[i]:raw())
+  end
+
+  wgpuQueueWriteBuffer(
+    renderer.queue,
+    self.instance_buffer,
+    0,
+    instances,
+    #Mesh.Instance * #self.instances
+  )
 end
 
 -- register storage for Mesh

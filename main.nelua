@@ -156,20 +156,17 @@ local cube_mesh_idx = meshes:create(Mesh.load_from_obj("./cube.obj"))
 local cube_mesh = &meshes[cube_mesh_idx]
 cube_mesh:init(world, "cube")
 
-local count: isize <const> = 50
+local count: isize <const> = 20
 
 local instances = world:s("entropy.scene.meshes.cube", Mesh.Instance)
 for y=-count,<count do
   for x=-count,<count do
     for z=-count,<count do
       local instance_idx = instances:create(cube_mesh:instance())
-      instances[instance_idx].transform = (Mat4.from_pos({ x * 5, z * 5, y * 5 }) * Mat4.from_scl({ 1, 1, 1 })):transpose()
+      instances[instance_idx].transform = Mat4.from_pos({ x * 5, z * 5, y * 5 }) * Mat4.from_scl({ 1, 1, 1 })
     end
   end
 end
-
-local instance_idx = instances:create(cube_mesh:instance())
-instances[instance_idx].transform = (Mat4.from_pos({ 0, -(count * 5 + 10), 0 }) * Mat4.from_scl({ count * 10, 0.1, count * 10 })):transpose()
 
 cube_mesh:prepare(renderer)
 
@@ -267,11 +264,13 @@ while not context:should_close() do
     cameras[camera_idx].pos = cameras[camera_idx].pos - {0, speed, 0}
   end
 
-  --[[
   for _, instance in mpairs(instances) do
-    instance.transform = instance.transform * Mat4.from_rot(0.01, { 0, 0, 1 }) * Mat4.from_rot(0.01, { 1, 0, 0 })
+    instance.transform = instance.transform * Mat4.from_pos({ (math.random() - 0.5) * 2 * speed, (math.random() - 0.5) * 2 * speed, (math.random() - 0.5) * 2 * speed }) * Mat4.from_rot(math.random() / 10, { math.random(), math.random(), math.random() })
   end
-  ]]
+
+  for _, mesh in mpairs(meshes) do
+    mesh:update(renderer)
+  end
 
   -- render
   local view = context:view()
