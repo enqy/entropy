@@ -168,6 +168,8 @@ for y=-count,<count do
   end
 end
 
+print("Total Instances: " .. tostring(#instances))
+
 cube_mesh:prepare(renderer)
 
 local fps_list: vector(float64)

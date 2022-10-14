@@ -265,22 +265,6 @@ function Impl:render(renderer: a_renderer, pass: WGPURenderPassEncoder, encoder:
     wgpuRenderPassEncoderSetVertexBuffer(pass, 1, mesh.instance_buffer, 0, 0)
 
     wgpuRenderPassEncoderDrawIndexed(pass, #mesh.indices, #mesh.instances, 0, 0, 0)
-
-    --[[
-    for _, instance in mpairs(mesh.instances) do
-      local model = instance.transform:transpose()
-      wgpuRenderPassEncoderSetPushConstants(pass, WGPUShaderStage_Vertex, 0, #Mat4, &model)
-      wgpuRenderPassEncoderDrawIndexed(pass, #mesh.indices, 1, 0, 0, 0)
-    end
-    ]]
-
-    --[[
-    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, mesh.vertex_buffer, 0, 0)
-    wgpuRenderPassEncoderSetIndexBuffer(pass, mesh.index_buffer, WGPUIndexFormat_Uint32, 0)
-    local model = mesh.transform:transpose()
-    wgpuRenderPassEncoderSetPushConstants(pass, WGPUShaderStage_Vertex, 0, #Mat4, &model)
-    wgpuRenderPassEncoderDrawIndexed(pass, #mesh.indices, 1, 0, 0, 0)
-    ]]
   end
 end
 
