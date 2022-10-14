@@ -11,6 +11,13 @@
         flake-utils.follows = "flake-utils";
       };
     };
+    zig = {
+      url = "github:mitchellh/zig-overlay";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+      };
+    };
 
     # utils
     flake-utils = {
@@ -47,7 +54,7 @@
     };
   };
 
-  outputs = inputs@{ self, nixpkgs, rust-overlay, flake-utils, gitignore, crane, ... }:
+  outputs = inputs@{ self, nixpkgs, rust-overlay, zig, flake-utils, gitignore, crane, ... }:
     let
       inherit (nixpkgs.lib) recursiveUpdate recurseIntoAttrs;
       inherit (flake-utils.lib) eachSystem flattenTree;
@@ -62,7 +69,7 @@
         let
           pkgs = import nixpkgs {
             inherit system;
-            overlays = [ (import rust-overlay) ];
+            overlays = [ (import rust-overlay) zig.overlays.default ];
           };
         in
         rec {
@@ -105,8 +112,9 @@
 
                     src = gitignoreSource ./.;
 
-                    nativeBuildInputs = [
+                    nativeBuildInputs = with pkgs; [
                       nelua
+                      zigpkgs.master
                     ] ++ nelua_modules;
 
                     # build NELUA_PATH so that nelua can find all of our modules
@@ -122,11 +130,19 @@
                     # add all the nelua modules to the include path because they may contain headers
                     CFLAGS = builtins.map (module: "-I${module}/include") (nelua_modules ++ extraModules);
 
+                    buildPhase = ''
+                      runHook preBuild
+
+                      nelua main.nelua --release --print-code > main.c
+
+                      runHook postBuild
+                    '';
+
                     installPhase = ''
                       runHook preInstall
 
                       mkdir -p $out/bin
-                      nelua --cc $CC --release main.nelua -o $out/bin/game
+                      zig cc -O3 -target $ZCC_TARGET main.c -o $out/bin/game $NIX_LDFLAGS $NIX_CFLAGS_COMPILE -lwgpu_native -lglfw3 -lunwind $ZCC_FLAGS
 
                       runHook postInstall
                     '';
@@ -142,6 +158,11 @@
                         glfw.linux.x86_64
                         wgpu-native.linux.x86_64
                       ];
+
+                      postBuild = ''
+                        export ZCC_TARGET=x86_64-linux-gnu
+                        export ZCC_FLAGS="-lX11"
+                      '';
                     });
                     aarch64 = linuxPkgs.aarch64.stdenv.mkDerivation (recursiveUpdate (baseDrv [ ]) {
                       buildInputs = with linuxPkgs.aarch64; [
@@ -151,6 +172,11 @@
                         glfw.linux.aarch64
                         wgpu-native.linux.aarch64
                       ];
+
+                      postBuild = ''
+                        export ZCC_TARGET=aarch64-linux-gnu
+                        export ZCC_FLAGS="-lX11"
+                      '';
                     });
                   };
                   windows = recurseIntoAttrs {
@@ -160,9 +186,13 @@
                         wgpu-native.windows.x86_64
                       ];
 
+                      postBuild = ''
+                        export ZCC_TARGET=x86_64-windows-gnu
+                        export ZCC_FLAGS="-lc++ -lgdi32 -ld3dcompiler_47 -luserenv -lbcrypt -lws2_32"
+                      '';
+
                       postInstall = ''
-                        cp ${glfw.windows.x86_64}/bin/glfw3.dll $out/bin
-                        cp ${wgpu-native.windows.x86_64}/lib/wgpu_native.dll $out/bin
+                        mv $out/bin/game $out/bin/game.exe
                       '';
                     });
                   };
@@ -182,7 +212,7 @@
                       ./nix/patches/glfw-x11.patch
                     ];
 
-                    cmakeFlags = [ "-DBUILD_SHARED_LIBS=ON" "-DGLFW_BUILD_EXAMPLES=OFF" "-DGLFW_BUILD_TESTS=OFF" ];
+                    cmakeFlags = [ "-DBUILD_SHARED_LIBS=OFF" "-DGLFW_BUILD_EXAMPLES=OFF" "-DGLFW_BUILD_TESTS=OFF" ];
                   };
                 in
                 recurseIntoAttrs {
@@ -282,11 +312,41 @@
                         };
                         craneLib = (crane.mkLib windowsPkgs.x86_64).overrideToolchain rustToolchain;
                       in
-                      craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) {
-                        CARGO_BUILD_TARGET = "x86_64-pc-windows-gnu";
+                      craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) (let
+                        zcc = pkgs.writeShellScriptBin "zcc" ''
+                          set -x
 
-                        buildInputs = with windowsPkgs.x86_64; [ stdenv.cc windows.pthreads ];
-                      });
+                          # remove specific args from arg list
+                          declare -a args=()
+                          for arg in "$@"; do
+                            case "$arg" in
+                              *compiler_builtins*) ;;
+                              -lwindows) ;;
+                              -l:libpthread.a) ;;
+                              -lgcc) ;;
+                              -lgcc_eh) args+=("-lc++") ;;
+                              -lgcc_s) args+=("-lunwind") ;;
+                              *) args+=("$arg") ;;
+                            esac
+                          done
+
+                          ${pkgs.zigpkgs.master}/bin/zig cc -target x86_64-windows-gnu $NIX_CFLAGS_COMPILE $NIX_LDFLAGS "$''\{args[@]}" -v
+                        '';
+                      in {
+                        CARGO_BUILD_TARGET = "x86_64-pc-windows-gnu";
+                        CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER = "${zcc}/bin/zcc";
+
+                        preBuild = ''
+                          export HOME=$TMPDIR
+                        '';
+
+                        postInstall = ''
+                          if [ -f $out/lib/libwgpu_native.a ]; then
+                            # objcopy --weaken $out/lib/libwgpu_native.a
+                            ar t $out/lib/libwgpu_native.a | grep compiler_builtins | xargs -I % ar dv $out/lib/libwgpu_native.a %
+                          fi
+                        '';
+                      }));
                   };
                 };
 
@@ -316,18 +376,6 @@
                       in
                       craneLib.buildPackage (recursiveUpdate baseDrv {
                         CARGO_BUILD_TARGET = "x86_64-unknown-linux-gnu";
-                      });
-                    aarch64 =
-                      let
-                        rustToolchain = linuxPkgs.aarch64.pkgsBuildHost.rust-bin.stable.latest.default.override {
-                          targets = [
-                            "aarch64-unknown-linux-gnu"
-                          ];
-                        };
-                        craneLib = (crane.mkLib linuxPkgs.aarch64).overrideToolchain rustToolchain;
-                      in
-                      craneLib.buildPackage (recursiveUpdate baseDrv {
-                        CARGO_BUILD_TARGET = "aarch64-unknown-linux-gnu";
                       });
                   };
                 };
@@ -490,6 +538,8 @@
                 nativeBuildInputs = with pkgs;
                   [
                     gcc
+                    gdb
+                    pkg-config
                     renderdoc
                     valgrind
                     vulkan-tools
@@ -498,6 +548,7 @@
                     wine64
                     xorg.libX11
                     xorg.libXrandr
+                    zigpkgs.master
                   ] ++ [
                     packages.nelua
                     packages."glfw/linux/x86_64"

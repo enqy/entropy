@@ -150,7 +150,8 @@
         "nelua": "nelua",
         "nixpkgs": "nixpkgs",
         "rust-overlay": "rust-overlay",
-        "wgpu-native": "wgpu-native"
+        "wgpu-native": "wgpu-native",
+        "zig": "zig"
       }
     },
     "rust-overlay": {
@@ -192,6 +193,29 @@
         "submodules": true,
         "type": "git",
         "url": "https://github.com/gfx-rs/wgpu-native"
+      }
+    },
+    "zig": {
+      "inputs": {
+        "flake-utils": [
+          "flake-utils"
+        ],
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1665663057,
+        "narHash": "sha256-k42CNjlArnr64st2EBlDiZzo0jBzCs6eta7zeb2KH6w=",
+        "owner": "mitchellh",
+        "repo": "zig-overlay",
+        "rev": "049f82ae9bc43f9ced8e3aa52f936b186c09c85f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mitchellh",
+        "repo": "zig-overlay",
+        "type": "github"
       }
     }
   },
