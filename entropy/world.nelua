@@ -13,8 +13,8 @@ function World.r(name: string <comptime>, T: type): void <inline>
     World.value.storages[name.value] = T.value
   else
     if World.value.storages[name.value] ~= T.value then
-      print("storage: ", name.value, " was already registered for type: ", World.value.storages[name.value])
-      print("storage: ", name.value, " is being registered for type: ", T.value)
+      io.stderr:write("storage: `" .. tostring(name.value) .. "` was already registered for type: `", tostring(World.value.storages[name.value]) .. "`")
+      io.stderr:write("storage: `" .. tostring(name.value) .. "` is being registered for type: `", tostring(T.value) .. "`")
       static_error("storage: `%s` was already registered for type: `%s` and is being registered with type: `%s`", name.value, World.value.storages[name.value], T.value)
     end
   end
@@ -27,13 +27,13 @@ function World:s(name: string <comptime>, T: type): auto <inline>
   local sname = name.value:gsub("%.", "___")
   -- static_assert(World.value.storages[name.value] ~= nil, "storage %s is not registered for a type!", name.value)
   if World.value.storages[name.value] == nil then
-    print("storage: ", name.value, " is not registered for a type! Registering with type: ", T.value)
+    io.stderr:write("storage: `" .. tostring(name.value) .. "` is not registered for a type! Registering with type: `" .. tostring(T.value) .. "`")
     World.value:add_field(sname, make_StorageT(T.value).value)
     World.value.storages[name.value] = T.value
   else
     if World.value.storages[name.value] ~= T.value then
-      print("storage: ", name.value, " was registered for type: ", World.value.storages[name.value])
-      print("storage: ", name.value, " is being accessed with type: ", T.value)
+      print("storage: `" .. tostring(name.value) .. "` was registered for type: `" .. tostring(World.value.storages[name.value]) .. "`")
+      print("storage: `" .. tostring(name.value) .. "` is being accessed with type: `" .. tostring(T.value) .. "`")
       static_error("storage: `%s` was registered for type: `%s` and is being accessed with type: `%s`", name.value, World.value.storages[name.value], T.value)
     end
   end
