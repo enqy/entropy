@@ -33,7 +33,7 @@ function GLFWContext:create_swapchain(): void
   if self.vsync then
     present_mode = WGPUPresentMode_Fifo
   else
-    present_mode = WGPUPresentMode_Immediate
+    present_mode = WGPUPresentMode_Mailbox
   end
 
   self.swapchain = wgpuDeviceCreateSwapChain(
@@ -125,12 +125,12 @@ function GLFWContext:init(title: string, width: uint32, height: uint32, vsync: b
   self.surface = wgpuInstanceCreateSurface(
     nilptr,
     &(@WGPUSurfaceDescriptor){
-      nextInChain = (@*WGPUChainedStruct)(&(@WGPUSurfaceDescriptorFromXlibWindow){
+      nextInChain = (@*WGPUChainedStruct)(&(@WGPUSurfaceDescriptorFromWaylandSurface){
         chain = (@WGPUChainedStruct){
-          sType = WGPUSType_SurfaceDescriptorFromXlibWindow,
+          sType = WGPUSType_SurfaceDescriptorFromWaylandSurface,
         },
-        display = glfwGetX11Display(),
-        window = glfwGetX11Window(self.window),
+        display = glfwGetWaylandDisplay(),
+        surface = glfwGetWaylandWindow(self.window),
       }),
     }
   )
