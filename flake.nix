@@ -190,13 +190,23 @@
                 };
                 nixos = recurseIntoAttrs {
                   x86_64 = linux.x86_64.overrideAttrs (old: {
+                    nativeBuildInputs = old.nativeBuildInputs ++ [pkgs.makeWrapper];
+
                     postInstall = ''
                       patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" $out/bin/game
+
+                      wrapProgram $out/bin/game \
+                        --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath (with linuxPkgs.x86_64; [wayland libxkbcommon vulkan-loader])}
                     '';
                   });
                   aarch64 = linux.aarch64.overrideAttrs (old: {
+                    nativeBuildInputs = old.nativeBuildInputs ++ [pkgs.makeWrapper];
+
                     postInstall = ''
                       patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" $out/bin/game
+
+                      wrapProgram $out/bin/game \
+                        --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath (with linuxPkgs.aarch64; [wayland libxkbcommon vulkan-loader])}
                     '';
                   });
                 };
@@ -291,7 +301,7 @@
                       rustc = rustToolchain;
                       cargo = rustToolchain;
                     };
-                    craneLib = (crane.mkLib linuxPkgs.x86_64).overrideToolchain rustToolchain;
+                    craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
                   in
                     craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) {
                       CARGO_BUILD_TARGET = "x86_64-unknown-linux-gnu";
@@ -306,7 +316,7 @@
                       rustc = rustToolchain;
                       cargo = rustToolchain;
                     };
-                    craneLib = (crane.mkLib linuxPkgs.aarch64).overrideToolchain rustToolchain;
+                    craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
                   in
                     craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) {
                       CARGO_BUILD_TARGET = "aarch64-unknown-linux-gnu";
