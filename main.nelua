@@ -267,7 +267,7 @@ while not context:should_close() do
   end
 
   for _, instance in mpairs(instances) do
-    instance.transform = instance.transform * Mat4.from_pos({ (math.random() - 0.5) * 2 * speed, (math.random() - 0.5) * 2 * speed, (math.random() - 0.5) * 2 * speed }) * Mat4.from_rot(math.random() / 10, { math.random(), math.random(), math.random() })
+    instance.transform = instance.transform * Mat4.from_pos({ (math.random() - 0.5) * speed, (math.random() - 0.5) * speed, (math.random() - 0.5) * speed }) * Mat4.from_rot(math.random() / 10, { math.random(), math.random(), math.random() })
   end
 
   for _, mesh in mpairs(meshes) do
