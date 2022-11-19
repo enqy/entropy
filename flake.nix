@@ -566,13 +566,19 @@
                 zigpkgs.master
               ]
               ++ [
-                packages.nelua
+                # need to wrap nelua here to pass correct LD_LIBRARY_PATH
+                (packages.nelua.overrideAttrs (old: {
+                  nativeBuildInputs = [pkgs.makeWrapper];
+
+                  postInstall = ''
+                    wrapProgram $out/bin/nelua \
+                      --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath (with pkgs; [wayland libxkbcommon vulkan-loader])}
+                  '';
+                }))
                 packages."glfw/linux/x86_64"
                 packages."wgpu-native/linux/x86_64"
                 # packages."naga/linux/x86_64"
               ];
-
-            LD_LIBRARY_PATH = ["${pkgs.vulkan-loader}/lib" "${pkgs.wayland}/lib" "${pkgs.libxkbcommon}/lib"];
           };
       }
     );
