@@ -28,6 +28,28 @@ function Shader.load_from_file(path: string): Shader
   }
 end
 
+function Shader.load_from_file_comptime(path: string <comptime>): Shader
+  ##[[
+  local file = io.open(path.value, "rb")
+  file:seek("set", 0)
+  local code = file:read("*a")
+  ]]
+
+  local wgsl_descriptor: *WGPUShaderModuleWGSLDescriptor = default_allocator:new(@WGPUShaderModuleWGSLDescriptor)
+  $wgsl_descriptor = (@WGPUShaderModuleWGSLDescriptor){
+    chain = (@WGPUChainedStruct) {
+      sType = WGPUSType_ShaderModuleWGSLDescriptor,
+    },
+    code = #[code]#,
+  }
+
+  return {
+    descriptor = (@WGPUShaderModuleDescriptor){
+      nextInChain = (@*WGPUChainedStruct)(wgsl_descriptor),
+    },
+  }
+end
+
 function Shader:create(device: WGPUDevice): void
   self.module = wgpuDeviceCreateShaderModule(device, self.descriptor)
 end

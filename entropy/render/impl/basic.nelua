@@ -25,7 +25,7 @@ local Impl: type = @record{
 
 function Impl:init(renderer: a_renderer): void
   -- load vertex shader
-  local vs_shader = Shader.load_from_file("entropy/render/impl/basic/vert.wgsl")
+  local vs_shader = Shader.load_from_file_comptime("entropy/render/impl/basic/vert.wgsl")
   vs_shader:create(renderer.device)
 
   -- vertex shader stuff
@@ -87,7 +87,7 @@ function Impl:init(renderer: a_renderer): void
     buffers = &vertex_buffer_layouts,
   }
 
-  local fs_shader = Shader.load_from_file("entropy/render/impl/basic/frag.wgsl")
+  local fs_shader = Shader.load_from_file_comptime("entropy/render/impl/basic/frag.wgsl")
   fs_shader:create(renderer.device)
 
   -- fragment shader stuff
