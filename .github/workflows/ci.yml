@@ -24,9 +24,11 @@ jobs:
 
       - name: Run Build (Linux x86_64)
         run: nix -L build .#game/linux/x86_64
+        if: matrix.os == 'ubuntu-latest'
 
       - name: Run Build (NixOS x86_64)
         run: nix -L build .#game/nixos/x86_64
+        if: matrix.os == 'ubuntu-latest'
 
       - name: Run Build (Windows x86_64)
         run: nix -L build .#game/windows/x86_64

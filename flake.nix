@@ -611,39 +611,39 @@
               '';
           };
 
-        #   devShells.default =
-        #     pkgs.mkShell
-        #     {
-        #       nativeBuildInputs = with pkgs;
-        #         [
-        #           gcc
-        #           gdb
-        #           libxkbcommon
-        #           pkg-config
-        #           renderdoc
-        #           valgrind
-        #           vulkan-tools
-        #           vulkan-tools-lunarg
-        #           vulkan-validation-layers
-        #           wayland
-        #           wine64
-        #           zigpkgs.master
-        #         ]
-        #         ++ [
-        #           # need to wrap nelua here to pass correct LD_LIBRARY_PATH
-        #           (packages.nelua.overrideAttrs (old: {
-        #             nativeBuildInputs = [pkgs.makeWrapper];
-        #
-        #             postInstall = ''
-        #               wrapProgram $out/bin/nelua \
-        #                 --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath (with pkgs; [wayland libxkbcommon vulkan-loader])}
-        #             '';
-        #           }))
-        #           packages."glfw/linux/x86_64"
-        #           packages."wgpu-native/linux/x86_64"
-        #           # packages."naga/linux/x86_64"
-        #         ];
-        #     };
+        devShells.default =
+          pkgs.mkShell
+          {
+            nativeBuildInputs = with pkgs;
+              [
+                gcc
+                gdb
+                libxkbcommon
+                pkg-config
+                renderdoc
+                valgrind
+                vulkan-tools
+                vulkan-tools-lunarg
+                vulkan-validation-layers
+                wayland
+                wine64
+                zigpkgs.master
+              ]
+              ++ [
+                # need to wrap nelua here to pass correct LD_LIBRARY_PATH
+                (packages.nelua.overrideAttrs (old: {
+                  nativeBuildInputs = [pkgs.makeWrapper];
+
+                  postInstall = ''
+                    wrapProgram $out/bin/nelua \
+                      --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath (with pkgs; [wayland libxkbcommon vulkan-loader])}
+                  '';
+                }))
+                packages."glfw/linux/x86_64"
+                packages."wgpu-native/linux/x86_64"
+                # packages."naga/linux/x86_64"
+              ];
+          };
       }
     );
 }
