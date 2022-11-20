@@ -12,7 +12,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ ubuntu-latest, macos-latest ]
+        os: [ ubuntu-latest ]
 
     runs-on: ${{ matrix.os }}
 
@@ -24,24 +24,15 @@ jobs:
 
       - name: Run Build (Linux x86_64)
         run: nix -L build .#game/linux/x86_64
-        if: matrix.os == 'ubuntu-latest'
 
       - name: Run Build (NixOS x86_64)
         run: nix -L build .#game/nixos/x86_64
-        if: matrix.os == 'ubuntu-latest'
 
       - name: Run Build (Windows x86_64)
         run: nix -L build .#game/windows/x86_64
-        if: matrix.os == 'ubuntu-latest'
 
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
           name: game-windows-x86_64
           path: ./result/bin/
-        if: matrix.os == 'ubuntu-latest'
-
-      - name: Run Build (macOS x86_64)
-        run: nix -L build .#game/darwin/x86_64
-        if: matrix.os == 'macos-latest'
-
