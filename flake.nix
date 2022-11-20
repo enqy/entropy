@@ -71,6 +71,8 @@
     # supported systems that we can run builds from
     eachSystem [
       "x86_64-linux"
+      "aarch64-linux"
+      "x86_64-darwin"
     ]
     (
       system: let
@@ -142,7 +144,8 @@
                 preBuild = let
                   nelua_path = "./?.nelua;${nelua}/lib/nelua/lib/?.nelua;" + (nixpkgs.lib.foldr (module: path: "${module}/nelua/?.nelua;" + path) ";" (nelua_modules ++ extraModules));
                 in ''
-                  export HOME=$TMPDIR
+                  export ZIG_LOCAL_CACHE_DIR="$TMPDIR/zig-cache"
+                  export ZIG_GLOBAL_CACHE_DIR="$ZIG_LOCAL_CACHE_DIR"
                   export NELUA_PATH="${nelua_path}"
                 '';
 
@@ -303,6 +306,11 @@
                   patch -p1 < ${./nix/patches/wgpu-native-ffi.patch} || true
                 '';
 
+                preBuild = ''
+                  export ZIG_LOCAL_CACHE_DIR="$TMPDIR/zig-cache"
+                  export ZIG_GLOBAL_CACHE_DIR="$ZIG_LOCAL_CACHE_DIR"
+                '';
+
                 preInstall = ''
                   mkdir -p $out/include
 
@@ -316,6 +324,34 @@
 
                 CARGO_PROFILE = "dev";
               };
+              zcc = pkgs.writeShellScriptBin "zcc" ''
+                set -x
+
+                # remove specific args from arg list
+                declare -a args=()
+                for arg in "$@"; do
+                  case "$arg" in
+                    *compiler_builtins*)
+                      if [[ "$ZCC_TARGET" != "x86_64-windows-gnu" ]]; then
+                        args+=("$arg")
+                      fi
+                    ;;
+                    -lwindows) ;;
+                    -l:libpthread.a) ;;
+                    -lgcc) ;;
+                    -lgcc_eh) args+=("-lc++") ;;
+                    -lgcc_s) args+=("-lunwind") ;;
+                    *) args+=("$arg") ;;
+                  esac
+                done
+
+                # cursed hack to use stdenv cc for build scripts so that they can run properly on the host system
+                if printf '%s\0' "$''\{args[@]}" | grep -qz -- 'build[_-]script'; then
+                  ${pkgs.stdenv.cc}/bin/cc "$@"
+                else
+                  ${pkgs.zigpkgs.master}/bin/zig cc -target $ZCC_TARGET $NIX_CFLAGS_COMPILE $NIX_LDFLAGS $ZCC_FLAGS "$''\{args[@]}"
+                fi
+              '';
             in
               recurseIntoAttrs {
                 linux = recurseIntoAttrs {
@@ -333,6 +369,8 @@
                   in
                     craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) {
                       CARGO_BUILD_TARGET = "x86_64-unknown-linux-gnu";
+                      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "${zcc}/bin/zcc";
+                      ZCC_TARGET = "x86_64-linux-gnu";
                     });
                   aarch64 = let
                     rustToolchain = linuxPkgs.aarch64.pkgsBuildHost.rust-bin.stable.latest.default.override {
@@ -348,7 +386,8 @@
                   in
                     craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) {
                       CARGO_BUILD_TARGET = "aarch64-unknown-linux-gnu";
-                      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "${linuxPkgs.aarch64.pkgsBuildHost.gcc}/bin/aarch64-unknown-linux-gnu-gcc";
+                      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "${zcc}/bin/zcc";
+                      ZCC_TARGET = "aarch64-linux-gnu";
                     });
                 };
                 windows = recurseIntoAttrs {
@@ -364,40 +403,19 @@
                     };
                     craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
                   in
-                    craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) (let
-                      zcc = pkgs.writeShellScriptBin "zcc" ''
-                        set -x
-
-                        # remove specific args from arg list
-                        declare -a args=()
-                        for arg in "$@"; do
-                          case "$arg" in
-                            *compiler_builtins*) ;;
-                            -lwindows) ;;
-                            -l:libpthread.a) ;;
-                            -lgcc) ;;
-                            -lgcc_eh) args+=("-lc++") ;;
-                            -lgcc_s) args+=("-lunwind") ;;
-                            *) args+=("$arg") ;;
-                          esac
-                        done
-
-                        ${pkgs.zigpkgs.master}/bin/zig cc -target x86_64-windows-gnu $NIX_CFLAGS_COMPILE $NIX_LDFLAGS "$''\{args[@]}" -v
-                      '';
-                    in {
+                    craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) {
                       CARGO_BUILD_TARGET = "x86_64-pc-windows-gnu";
                       CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER = "${zcc}/bin/zcc";
+                      ZCC_TARGET = "x86_64-windows-gnu";
 
-                      preBuild = ''
-                        export HOME=$TMPDIR
-                      '';
-
+                      # need to remove rust's compiler_builtins because it's not compatible with zig's compiler_rt when statically built
+                      # TODO: https://github.com/ziglang/zig/issues/5320
                       postInstall = ''
                         if [ -f $out/lib/libwgpu_native.a ]; then
                           ar t $out/lib/libwgpu_native.a | grep compiler_builtins | xargs -I % ar dv $out/lib/libwgpu_native.a %
                         fi
                       '';
-                    }));
+                    });
                 };
                 darwin = recurseIntoAttrs {
                   x86_64 = let
@@ -406,7 +424,7 @@
                         "x86_64-apple-darwin"
                       ];
                     };
-                    rustPlatform = pkgs.makeRustPlatform {
+                    rustPlatform = darwinPkgs.x86_64.pkgsBuildHost.makeRustPlatform {
                       rustc = rustToolchain;
                       cargo = rustToolchain;
                     };
@@ -414,6 +432,8 @@
                   in
                     craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) {
                       CARGO_BUILD_TARGET = "x86_64-apple-darwin";
+                      CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER = "${zcc}/bin/zcc";
+                      ZCC_TARGET = "x86_64-darwin";
                     });
                 };
               };
