@@ -297,9 +297,13 @@
                 version = inputs.wgpu-native.shortRev;
                 src = inputs.wgpu-native;
 
-                nativeBuildInputs = [
-                  rustPlatform.bindgenHook
-                ];
+                nativeBuildInputs =
+                  [
+                    rustPlatform.bindgenHook
+                  ]
+                  ++ nixpkgs.lib.optional pkgs.stdenv.isDarwin (with pkgs; [
+                    libiconv
+                  ]);
 
                 postPatch = ''
                   patch -p1 < ${./nix/patches/wgpu-native-nelua.patch} || true
