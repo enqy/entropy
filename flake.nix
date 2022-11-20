@@ -102,6 +102,18 @@
               overlays = [(import rust-overlay)];
             };
           };
+          darwinPkgs = {
+            x86_64 = import nixpkgs {
+              localSystem = system;
+              crossSystem = {config = "x86_64-apple-darwin";};
+              overlays = [(import rust-overlay)];
+            };
+            aaarch64 = import nixpkgs {
+              localSystem = system;
+              crossSystem = {config = "aarch64-apple-darwin";};
+              overlays = [(import rust-overlay)];
+            };
+          };
         in
           flattenTree rec {
             game = let
@@ -227,6 +239,19 @@
                     '';
                   });
                 };
+                darwin = recurseIntoAttrs {
+                  x86_64 = darwinPkgs.x86_64.stdenv.mkDerivation (recursiveUpdate (baseDrv []) {
+                    buildInputs = [
+                      glfw.darwin.x86_64
+                      wgpu-native.darwin.x86_64
+                    ];
+
+                    postBuild = ''
+                      export ZCC_TARGET=x86_64-macos-gnu
+                      export ZCC_FLAGS="-framework Cocoa"
+                    '';
+                  });
+                };
               };
 
             # ===== REQUIRED LIBS/BUILD STUFF BELOW =====
@@ -257,6 +282,9 @@
                       ln -fs $out/lib/libglfw3dll.a $out/lib/glfw3.lib
                     '';
                   });
+                };
+                darwin = recurseIntoAttrs {
+                  x86_64 = darwinPkgs.x86_64.stdenv.mkDerivation (recursiveUpdate baseDrv {});
                 };
               };
 
@@ -366,11 +394,27 @@
 
                       postInstall = ''
                         if [ -f $out/lib/libwgpu_native.a ]; then
-                          # objcopy --weaken $out/lib/libwgpu_native.a
                           ar t $out/lib/libwgpu_native.a | grep compiler_builtins | xargs -I % ar dv $out/lib/libwgpu_native.a %
                         fi
                       '';
                     }));
+                };
+                darwin = recurseIntoAttrs {
+                  x86_64 = let
+                    rustToolchain = darwinPkgs.x86_64.pkgsBuildHost.rust-bin.stable.latest.default.override {
+                      targets = [
+                        "x86_64-apple-darwin"
+                      ];
+                    };
+                    rustPlatform = pkgs.makeRustPlatform {
+                      rustc = rustToolchain;
+                      cargo = rustToolchain;
+                    };
+                    craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
+                  in
+                    craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) {
+                      CARGO_BUILD_TARGET = "x86_64-apple-darwin";
+                    });
                 };
               };
 

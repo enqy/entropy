@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "darwin" ]
   pull_request:
     branches: [ "main" ]
 
@@ -10,7 +10,11 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v3
@@ -30,5 +34,10 @@ jobs:
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: result
+          name: game-windows-x86_64
           path: ./result/bin/
+
+      - name: Run Build (macOS x86_64)
+        run: nix -L build .#game/macos/x86_64
+        if: matrix.os == 'macos-latest'
+
