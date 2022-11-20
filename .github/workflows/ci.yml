@@ -32,12 +32,14 @@ jobs:
 
       - name: Run Build (Windows x86_64)
         run: nix -L build .#game/windows/x86_64
+        if: matrix.os == 'ubuntu-latest'
 
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
           name: game-windows-x86_64
           path: ./result/bin/
+        if: matrix.os == 'ubuntu-latest'
 
       - name: Run Build (macOS x86_64)
         run: nix -L build .#game/macos/x86_64
