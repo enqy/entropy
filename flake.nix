@@ -494,6 +494,7 @@
 
               nativeBuildInputs = with pkgs; [
                 pkg-config
+                gcc
               ];
 
               buildInputs = with pkgs; [
@@ -583,7 +584,11 @@
                 #include "wgpu.h"
               '';
             in
-              pkgs.runCommandCC "wgpu-nelua" {} ''
+              pkgs.runCommand "wgpu-nelua" {
+                nativeBuildInputs = with pkgs; [
+                  gcc
+                ];
+              } ''
                 cp ${wgpu-native.linux.x86_64}/include/*.h .
                 cp ${wgpu_lua} wgpu.lua
                 cp ${wgpu_c} wgpu.c
