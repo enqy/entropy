@@ -42,6 +42,6 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
 
       - name: Run Build (macOS x86_64)
-        run: nix -L build .#game/macos/x86_64
+        run: nix -L build .#game/darwin/x86_64
         if: matrix.os == 'macos-latest'
 
