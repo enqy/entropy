@@ -147,12 +147,14 @@
                 then null
                 else {config = "x86_64-unknown-linux-gnu";};
               config.allowUnsupportedSystem = true;
+              config.allowBroken = true;
             };
             aarch64 = import nixpkgs {
               inherit overlays;
               localSystem = system;
               crossSystem = {config = "aarch64-unknown-linux-gnu";};
               config.allowUnsupportedSystem = true;
+              config.allowBroken = true;
             };
           };
           windowsPkgs = {
