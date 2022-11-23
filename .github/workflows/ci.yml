@@ -12,9 +12,11 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ ubuntu-latest, macos-latest ]
+        build_os: [ ubuntu-latest, macos-latest ]
+        host_os: [ linux, nixos, darwin ]
+        host_arch: [ x86_64, aarch64 ]
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.build_os }}
 
     steps:
       - uses: actions/checkout@v3
@@ -22,17 +24,17 @@ jobs:
       - name: Install Nix
         uses: cachix/install-nix-action@v18
 
-      - name: Run Build (Linux x86_64)
-        run: nix -L build .#app/linux/x86_64
+      - name: Run Build (${{ matrix.host_arch }}-${{ matrix.host_os }})
+        run: nix -L build .#app/${{ matrix.host_os }}/${{ matrix.host_arch }}}}
 
-      - name: Run Build (Linux aarch64)
-        run: nix -L build .#app/linux/aarch64
+  release:
+    runs-on: ubuntu-latest
 
-      - name: Run Build (NixOS x86_64)
-        run: nix -L build .#app/nixos/x86_64
+    steps:
+      - uses: actions/checkout@v3
 
-      - name: Run Build (NixOS aarch64)
-        run: nix -L build .#app/nixos/aarch64
+      - name: Install Nix
+        uses: cachix/install-nix-action@v18
 
       - name: Run Build (Windows x86_64)
         run: nix -L build .#app/windows/x86_64
@@ -42,9 +44,3 @@ jobs:
         with:
           name: app-windows-x86_64
           path: ./result/bin/
-
-      - name: Run Build (Darwin x86_64)
-        run: nix -L build .#app/darwin/x86_64
-
-      - name: Run Build (Darwin aarch64)
-        run: nix -L build .#app/darwin/aarch64
