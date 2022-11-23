@@ -23,16 +23,22 @@ jobs:
         uses: cachix/install-nix-action@v18
 
       - name: Run Build (Linux x86_64)
-        run: nix -L build .#game/linux/x86_64
+        run: nix -L build .#app/linux/x86_64
 
       - name: Run Build (NixOS x86_64)
-        run: nix -L build .#game/nixos/x86_64
+        run: nix -L build .#app/nixos/x86_64
 
       - name: Run Build (Windows x86_64)
-        run: nix -L build .#game/windows/x86_64
+        run: nix -L build .#app/windows/x86_64
 
       - name: Upload Windows Artifact
         uses: actions/upload-artifact@v3.1.0
         with:
-          name: game-windows-x86_64
+          name: app-windows-x86_64
           path: ./result/bin/
+
+      - name: Run Build (Darwin x86_64)
+        run: nix -L build .#app/darwin/x86_64
+
+      - name: Run Build (Darwin aarch64)
+        run: nix -L build .#app/darwin/aarch64

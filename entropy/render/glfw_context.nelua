@@ -121,7 +121,7 @@ function GLFWContext:init(title: string, width: uint32, height: uint32, vsync: b
       }),
     }
   )
-## else
+## elseif ccinfo.is_linux then
   self.surface = wgpuInstanceCreateSurface(
     nilptr,
     &(@WGPUSurfaceDescriptor){
@@ -131,6 +131,25 @@ function GLFWContext:init(title: string, width: uint32, height: uint32, vsync: b
         },
         display = glfwGetWaylandDisplay(),
         surface = glfwGetWaylandWindow(self.window),
+      }),
+    }
+  )
+## elseif ccinfo.is_apple then
+  local metal_layer = nilptr
+  ##[==[ cemit [[
+    NSWindow *ns_window = glfwGetCocoaWindow(self->window);
+    [ns_window.contentView setWantsLayer:YES];
+    metal_layer = [CAMetalLayer layer];
+    [ns_window.contentView setLayer:metal_layer];
+  ]] ]==]
+  self.surface = wgpuInstanceCreateSurface(
+    nilptr,
+    &(@WGPUSurfaceDescriptor){
+      nextInChain = (@*WGPUChainedStruct)(&(@WGPUSurfaceDescriptorFromMetalLayer){
+        chain = (@WGPUChainedStruct){
+          sType = WGPUSType_SurfaceDescriptorFromMetalLayer,
+        },
+        layer = metal_layer,
       }),
     }
   )

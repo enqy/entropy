@@ -64,7 +64,7 @@
     crane,
     ...
   }: let
-    inherit (nixpkgs.lib) recursiveUpdate recurseIntoAttrs;
+    inherit (nixpkgs.lib) recurseIntoAttrs;
     inherit (flake-utils.lib) eachSystem flattenTree;
     inherit (gitignore.lib) gitignoreSource;
   in
@@ -76,413 +76,264 @@
     ]
     (
       system: let
+        overlay = final: prev: {
+          zig-cc = final.writeShellScriptBin "zig-cc" ''
+            set -x
+            # remove specific args from host cc arg list
+            declare -a args=()
+            for arg in "$@"; do
+              case "$arg" in
+                *compiler_builtins*)
+                  if [[ "$ZIG_CC_TARGET" != "x86_64-windows-gnu" ]]; then
+                    args+=("$arg")
+                  fi
+                ;;
+                -lwindows) ;;
+                -l:libpthread.a) ;;
+                -lgcc) ;;
+                -lgcc_eh) args+=("-lc++") ;;
+                -lgcc_s) args+=("-lunwind") ;;
+                -liconv) ;;
+                *) args+=("$arg") ;;
+              esac
+            done
+
+            # cursed hack to use stdenv cc for rust build scripts so that they can run properly on the host system
+            if printf '%s\0' "$''\{args[@]}" | grep -qz -- 'build[_-]script'; then
+              ${final.stdenv.cc}/bin/cc "$@"
+            else
+              ${final.zigpkgs.master}/bin/zig cc $ZIG_CC_FLAGS -target $ZIG_CC_TARGET $CC_FLAGS $NIX_CFLAGS_COMPILE "$''\{args[@]}"
+            fi
+          '';
+          zig-ld = final.writeShellScriptBin "zig-ld" ''
+            exec ${final.zig-cc}/bin/zig-cc $NIX_LDFLAGS "$@"
+          '';
+          zig-ar = final.writeShellScriptBin "zig-ar" ''
+            if [[ "$ZIG_CC_TARGET" == "x86_64-apple-none" ]] || [[ "$ZIG_CC_TARGET" == "aarch64-apple-none" ]]; then
+              exec ${final.zigpkgs.master}/bin/zig ar --format=darwin "$@"
+            else
+              exec ${final.zigpkgs.master}/bin/zig ar "$@"
+            fi
+          '';
+          zig-dlltool = final.writeShellScriptBin "zig-dlltool" ''
+            exec ${final.zigpkgs.master}/bin/zig dlltool "$@"
+          '';
+          zig-lib = final.writeShellScriptBin "zig-lib" ''
+            exec ${final.zigpkgs.master}/bin/zig lib "$@"
+          '';
+          zig-ranlib = final.writeShellScriptBin "zig-ranlib" ''
+            exec ${final.zigpkgs.master}/bin/zig ranlib "$@"
+          '';
+          zig-rc = final.writeShellScriptBin "zig-rc" ''
+            exec ${final.zig-cc}/bin/zig-cc "$@"
+          '';
+        };
+        overlays = [
+          overlay
+          (import rust-overlay)
+          zig.overlays.default
+        ];
         pkgs = import nixpkgs {
-          inherit system;
-          overlays = [(import rust-overlay) zig.overlays.default];
+          inherit system overlays;
         };
       in rec {
         packages = let
           linuxPkgs = {
             x86_64 = import nixpkgs {
+              inherit overlays;
               localSystem = system;
               crossSystem =
                 if (system == "x86_64-linux")
                 then null
                 else {config = "x86_64-unknown-linux-gnu";};
-              overlays = [(import rust-overlay)];
             };
             aarch64 = import nixpkgs {
+              inherit overlays;
               localSystem = system;
               crossSystem = {config = "aarch64-unknown-linux-gnu";};
-              overlays = [(import rust-overlay)];
             };
           };
           windowsPkgs = {
             x86_64 = import nixpkgs {
+              inherit overlays;
               localSystem = system;
               crossSystem = {config = "x86_64-w64-mingw32";};
-              overlays = [(import rust-overlay)];
+              config.allowUnsupportedSystem = true;
             };
           };
-          darwinPkgs = {
+          darwinPkgs = let
+            overlays' =
+              overlays
+              ++ [
+                (final: prev: {
+                  darwin =
+                    prev.darwin
+                    // {
+                      rewrite-tbd =
+                        (prev.darwin.rewrite-tbd.override {
+                          stdenv = final.llvmPackages.stdenv;
+                        })
+                        .overrideAttrs (old: {
+                          patches = [
+                            (final.fetchpatch {
+                              url = "https://patch-diff.githubusercontent.com/raw/thefloweringash/rewrite-tbd/pull/1.patch";
+                              sha256 = "sha256-YYU7EfA4vIUAhvSxiuiOvpHLIJjT46aIdnpWvU5YJnE=";
+                            })
+                          ];
+                        });
+                      apple_sdk = prev.pkgsBuildBuild.darwin.apple_sdk_11_0;
+                      LibsystemCross = prev.pkgsBuildBuild.darwin.apple_sdk_11_0.Libsystem;
+                    };
+                })
+              ];
+          in {
             x86_64 = import nixpkgs {
               localSystem = system;
               crossSystem = {config = "x86_64-apple-darwin";};
-              overlays = [(import rust-overlay)];
+              config.allowUnsupportedSystem = true;
+              overlays = overlays';
             };
-            aaarch64 = import nixpkgs {
+            aarch64 = import nixpkgs {
               localSystem = system;
               crossSystem = {config = "aarch64-apple-darwin";};
-              overlays = [(import rust-overlay)];
+              config.allowUnsupportedSystem = true;
+              overlays = overlays';
             };
+          };
+          rustToolchain = pkgs.rust-bin.stable.latest.default.override {
+            targets = [
+              "x86_64-unknown-linux-gnu"
+              "aarch64-unknown-linux-gnu"
+              "x86_64-pc-windows-gnu"
+              "x86_64-apple-darwin"
+              "aarch64-apple-darwin"
+            ];
           };
         in
           flattenTree rec {
-            game = let
-              nelua_modules = [
-                glfw-nelua
-                glfwnative-nelua
-                wgpu-nelua
-
-                entropy
-              ];
-
-              baseDrv = extraModules: {
-                pname = "game";
-                version = "0.1.0";
-
-                src = gitignoreSource ./.;
-
-                nativeBuildInputs = with pkgs;
-                  [
-                    nelua
-                    zigpkgs.master
-                  ]
-                  ++ nelua_modules;
-
-                # build NELUA_PATH so that nelua can find all of our modules
-                preBuild = let
-                  nelua_path = "./?.nelua;${nelua}/lib/nelua/lib/?.nelua;" + (nixpkgs.lib.foldr (module: path: "${module}/nelua/?.nelua;" + path) ";" (nelua_modules ++ extraModules));
-                in ''
-                  export ZIG_LOCAL_CACHE_DIR="$TMPDIR/zig-cache"
-                  export ZIG_GLOBAL_CACHE_DIR="$ZIG_LOCAL_CACHE_DIR"
-                  export NELUA_PATH="${nelua_path}"
-                '';
-
-                # add all the nelua modules to the include path because they may contain headers
-                CFLAGS = builtins.map (module: "-I${module}/include") (nelua_modules ++ extraModules);
-
-                buildPhase = ''
-                  runHook preBuild
-
-                  nelua main.nelua --release --print-code > main.c
-
-                  runHook postBuild
-                '';
-
-                installPhase = ''
-                  runHook preInstall
-
-                  mkdir -p $out/bin
-                  zig cc -O3 -target $ZCC_TARGET main.c -o $out/bin/game $NIX_LDFLAGS $NIX_CFLAGS_COMPILE -lwgpu_native -lglfw3 -lunwind $ZCC_FLAGS
-
-                  runHook postInstall
-                '';
+            app = recurseIntoAttrs {
+              linux = recurseIntoAttrs {
+                x86_64 = linuxPkgs.x86_64.callPackage ./nix/app {
+                  inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs;
+                  glfw = glfw.linux.x86_64;
+                  wgpu-native = wgpu-native.linux.x86_64;
+                } {};
+                aarch64 = linuxPkgs.aarch64.callPackage ./nix/app {
+                  inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs;
+                  glfw = glfw.linux.aarch64;
+                  wgpu-native = wgpu-native.linux.aarch64;
+                } {};
               };
-            in
-              recurseIntoAttrs rec {
-                linux = recurseIntoAttrs {
-                  x86_64 = linuxPkgs.x86_64.stdenv.mkDerivation (recursiveUpdate (baseDrv []) {
-                    buildInputs = with linuxPkgs.x86_64;
-                      [
-                        wayland
-                      ]
-                      ++ [
-                        glfw.linux.x86_64
-                        wgpu-native.linux.x86_64
-                      ];
-
-                    postBuild = ''
-                      export ZCC_TARGET=x86_64-linux-gnu.2.27
-                      export ZCC_FLAGS="-lwayland-client"
-                    '';
-                  });
-                  aarch64 = linuxPkgs.aarch64.stdenv.mkDerivation (recursiveUpdate (baseDrv []) {
-                    buildInputs = with linuxPkgs.aarch64;
-                      [
-                        wayland
-                      ]
-                      ++ [
-                        glfw.linux.aarch64
-                        wgpu-native.linux.aarch64
-                      ];
-
-                    postBuild = ''
-                      export ZCC_TARGET=aarch64-linux-gnu.2.27
-                      export ZCC_FLAGS="-lwayland-client"
-                    '';
-                  });
-                };
-                nixos = recurseIntoAttrs {
-                  x86_64 = linux.x86_64.overrideAttrs (old: {
-                    nativeBuildInputs = old.nativeBuildInputs ++ [pkgs.makeWrapper];
-
-                    postInstall = ''
-                      patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" $out/bin/game
-
-                      wrapProgram $out/bin/game \
-                        --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath (with linuxPkgs.x86_64; [wayland libxkbcommon vulkan-loader])}
-                    '';
-                  });
-                  aarch64 = linux.aarch64.overrideAttrs (old: {
-                    nativeBuildInputs = old.nativeBuildInputs ++ [pkgs.makeWrapper];
-
-                    postInstall = ''
-                      patchelf --set-interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" $out/bin/game
-
-                      wrapProgram $out/bin/game \
-                        --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath (with linuxPkgs.aarch64; [wayland libxkbcommon vulkan-loader])}
-                    '';
-                  });
-                };
-                windows = recurseIntoAttrs {
-                  x86_64 = windowsPkgs.x86_64.stdenv.mkDerivation (recursiveUpdate (baseDrv [windows-nelua]) {
-                    buildInputs = [
-                      glfw.windows.x86_64
-                      wgpu-native.windows.x86_64
-                    ];
-
-                    postBuild = ''
-                      export ZCC_TARGET=x86_64-windows-gnu
-                      export ZCC_FLAGS="-lc++ -lgdi32 -ld3dcompiler_47 -luserenv -lbcrypt -lws2_32"
-                    '';
-
-                    postInstall = ''
-                      mv $out/bin/game $out/bin/game.exe
-                    '';
-                  });
-                };
-                darwin = recurseIntoAttrs {
-                  x86_64 = darwinPkgs.x86_64.stdenv.mkDerivation (recursiveUpdate (baseDrv []) {
-                    buildInputs = [
-                      glfw.darwin.x86_64
-                      wgpu-native.darwin.x86_64
-                    ];
-
-                    postBuild = ''
-                      export ZCC_TARGET=x86_64-macos-gnu
-                      export ZCC_FLAGS="-framework Cocoa"
-                    '';
-                  });
-                };
+              nixos = recurseIntoAttrs {
+                x86_64 =
+                  linuxPkgs.x86_64.callPackage ./nix/app {
+                    inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs;
+                    glfw = glfw.linux.x86_64;
+                    wgpu-native = wgpu-native.linux.x86_64;
+                  } {
+                    nixos = true;
+                  };
+                aarch64 =
+                  linuxPkgs.aarch64.callPackage ./nix/app {
+                    inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs;
+                    glfw = glfw.linux.aarch64;
+                    wgpu-native = wgpu-native.linux.aarch64;
+                  } {
+                    nixos = true;
+                  };
               };
+              windows = recurseIntoAttrs {
+                x86_64 = windowsPkgs.x86_64.callPackage ./nix/app {
+                  inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy windows-nelua inputs;
+                  glfw = glfw.windows.x86_64;
+                  wgpu-native = wgpu-native.windows.x86_64;
+                } {};
+              };
+              darwin = recurseIntoAttrs {
+                x86_64 = darwinPkgs.x86_64.callPackage ./nix/app {
+                  inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs;
+                  glfw = glfw.darwin.x86_64;
+                  wgpu-native = wgpu-native.darwin.x86_64;
+                } {};
+                aarch64 = darwinPkgs.aarch64.callPackage ./nix/app {
+                  inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs;
+                  glfw = glfw.darwin.aarch64;
+                  wgpu-native = wgpu-native.darwin.aarch64;
+                } {};
+              };
+            };
 
             # ===== REQUIRED LIBS/BUILD STUFF BELOW =====
-            glfw = let
-              baseDrv = {
-                pname = "glfw";
-                version = inputs.glfw.shortRev;
-                src = inputs.glfw;
-
-                nativeBuildInputs = with pkgs; [cmake extra-cmake-modules];
-
-                cmakeFlags = ["-DBUILD_SHARED_LIBS=OFF" "-DGLFW_BUILD_EXAMPLES=OFF" "-DGLFW_BUILD_TESTS=OFF" "-DGLFW_BUILD_DOCS=OFF" "-DGLFW_BUILD_WAYLAND=ON" "-DGLFW_BUILD_X11=OFF"];
+            glfw = recurseIntoAttrs {
+              linux = recurseIntoAttrs {
+                x86_64 = linuxPkgs.x86_64.callPackage ./nix/glfw {inherit inputs;};
+                aarch64 = linuxPkgs.aarch64.callPackage ./nix/glfw {inherit inputs;};
               };
-            in
-              recurseIntoAttrs {
-                linux = recurseIntoAttrs {
-                  x86_64 = linuxPkgs.x86_64.stdenv.mkDerivation (recursiveUpdate baseDrv {
-                    buildInputs = with linuxPkgs.x86_64; [wayland wayland-protocols libxkbcommon];
-                  });
-                  aarch64 = linuxPkgs.aarch64.stdenv.mkDerivation (recursiveUpdate baseDrv {
-                    buildInputs = with linuxPkgs.aarch64; [wayland wayland-protocols libxkbcommon];
-                  });
-                };
-                windows = recurseIntoAttrs {
-                  x86_64 = windowsPkgs.x86_64.stdenv.mkDerivation (recursiveUpdate baseDrv {
-                    # this is needed because some compilers look for .lib files to link for when compiling for windows
-                    postInstall = ''
-                      ln -fs $out/lib/libglfw3dll.a $out/lib/glfw3.lib
-                    '';
-                  });
-                };
-                darwin = recurseIntoAttrs {
-                  x86_64 = darwinPkgs.x86_64.stdenv.mkDerivation (recursiveUpdate baseDrv {});
-                };
+              windows = recurseIntoAttrs {
+                x86_64 = windowsPkgs.x86_64.callPackage ./nix/glfw {inherit inputs;};
               };
-
-            wgpu-native = let
-              baseDrv = rustPlatform: {
-                pname = "wgpu-native";
-                version = inputs.wgpu-native.shortRev;
-                src = inputs.wgpu-native;
-
-                nativeBuildInputs =
-                  [
-                    rustPlatform.bindgenHook
-                  ]
-                  ++ nixpkgs.lib.optional pkgs.stdenv.isDarwin (with pkgs; [
-                    libiconv
-                  ]);
-
-                postPatch = ''
-                  patch -p1 < ${./nix/patches/wgpu-native-nelua.patch} || true
-                  patch -p1 < ${./nix/patches/wgpu-native-ffi.patch} || true
-                '';
-
-                preBuild = ''
-                  export ZIG_LOCAL_CACHE_DIR="$TMPDIR/zig-cache"
-                  export ZIG_GLOBAL_CACHE_DIR="$ZIG_LOCAL_CACHE_DIR"
-                '';
-
-                preInstall = ''
-                  mkdir -p $out/include
-
-                  install -m664 ${inputs.wgpu-native}/ffi/webgpu-headers/webgpu.h $out/include
-                  install -m664 ${inputs.wgpu-native}/ffi/wgpu.h $out/include
-                  patch -d $out/include -p2 < ${./nix/patches/wgpu-native-ffi.patch}
-                  sed -i -e 's/#include "webgpu-headers.*/#include <webgpu.h>/' $out/include/wgpu.h
-                '';
-
-                doCheck = false;
-
-                CARGO_PROFILE = "dev";
+              darwin = recurseIntoAttrs {
+                x86_64 = darwinPkgs.x86_64.callPackage ./nix/glfw {inherit inputs;};
+                aarch64 = darwinPkgs.aarch64.callPackage ./nix/glfw {inherit inputs;};
               };
-              zcc = pkgs.writeShellScriptBin "zcc" ''
-                set -x
+            };
 
-                # remove specific args from arg list
-                declare -a args=()
-                for arg in "$@"; do
-                  case "$arg" in
-                    *compiler_builtins*)
-                      if [[ "$ZCC_TARGET" != "x86_64-windows-gnu" ]]; then
-                        args+=("$arg")
-                      fi
-                    ;;
-                    -lwindows) ;;
-                    -l:libpthread.a) ;;
-                    -lgcc) ;;
-                    -lgcc_eh) args+=("-lc++") ;;
-                    -lgcc_s) args+=("-lunwind") ;;
-                    *) args+=("$arg") ;;
-                  esac
-                done
-
-                # cursed hack to use stdenv cc for build scripts so that they can run properly on the host system
-                if printf '%s\0' "$''\{args[@]}" | grep -qz -- 'build[_-]script'; then
-                  ${pkgs.stdenv.cc}/bin/cc "$@"
-                else
-                  ${pkgs.zigpkgs.master}/bin/zig cc -target $ZCC_TARGET $NIX_CFLAGS_COMPILE $NIX_LDFLAGS $ZCC_FLAGS "$''\{args[@]}"
-                fi
-              '';
-            in
-              recurseIntoAttrs {
-                linux = recurseIntoAttrs {
-                  x86_64 = let
-                    rustToolchain = linuxPkgs.x86_64.pkgsBuildHost.rust-bin.stable.latest.default.override {
-                      targets = [
-                        "x86_64-unknown-linux-gnu"
-                      ];
-                    };
-                    rustPlatform = linuxPkgs.x86_64.pkgsBuildHost.makeRustPlatform {
-                      rustc = rustToolchain;
-                      cargo = rustToolchain;
-                    };
-                    craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
-                  in
-                    craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) {
-                      CARGO_BUILD_TARGET = "x86_64-unknown-linux-gnu";
-                      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "${zcc}/bin/zcc";
-                      ZCC_TARGET = "x86_64-linux-gnu";
-                    });
-                  aarch64 = let
-                    rustToolchain = linuxPkgs.aarch64.pkgsBuildHost.rust-bin.stable.latest.default.override {
-                      targets = [
-                        "aarch64-unknown-linux-gnu"
-                      ];
-                    };
-                    rustPlatform = linuxPkgs.aarch64.pkgsBuildHost.makeRustPlatform {
-                      rustc = rustToolchain;
-                      cargo = rustToolchain;
-                    };
-                    craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
-                  in
-                    craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) {
-                      CARGO_BUILD_TARGET = "aarch64-unknown-linux-gnu";
-                      CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "${zcc}/bin/zcc";
-                      ZCC_TARGET = "aarch64-linux-gnu";
-                    });
-                };
-                windows = recurseIntoAttrs {
-                  x86_64 = let
-                    rustToolchain = windowsPkgs.x86_64.pkgsBuildHost.rust-bin.stable.latest.default.override {
-                      targets = [
-                        "x86_64-pc-windows-gnu"
-                      ];
-                    };
-                    rustPlatform = pkgs.makeRustPlatform {
-                      rustc = rustToolchain;
-                      cargo = rustToolchain;
-                    };
-                    craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
-                  in
-                    craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) {
-                      CARGO_BUILD_TARGET = "x86_64-pc-windows-gnu";
-                      CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER = "${zcc}/bin/zcc";
-                      ZCC_TARGET = "x86_64-windows-gnu";
-
-                      # need to remove rust's compiler_builtins because it's not compatible with zig's compiler_rt when statically built
-                      # TODO: https://github.com/ziglang/zig/issues/5320
-                      postInstall = ''
-                        if [ -f $out/lib/libwgpu_native.a ]; then
-                          ar t $out/lib/libwgpu_native.a | grep compiler_builtins | xargs -I % ar dv $out/lib/libwgpu_native.a %
-                        fi
-                      '';
-                    });
-                };
-                darwin = recurseIntoAttrs {
-                  x86_64 = let
-                    rustToolchain = darwinPkgs.x86_64.pkgsBuildHost.rust-bin.stable.latest.default.override {
-                      targets = [
-                        "x86_64-apple-darwin"
-                      ];
-                    };
-                    rustPlatform = darwinPkgs.x86_64.pkgsBuildHost.makeRustPlatform {
-                      rustc = rustToolchain;
-                      cargo = rustToolchain;
-                    };
-                    craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
-                  in
-                    craneLib.buildPackage (recursiveUpdate (baseDrv rustPlatform) {
-                      CARGO_BUILD_TARGET = "x86_64-apple-darwin";
-                      CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER = "${zcc}/bin/zcc";
-                      ZCC_TARGET = "x86_64-darwin";
-                    });
-                };
+            wgpu-native = recurseIntoAttrs {
+              linux = recurseIntoAttrs {
+                x86_64 = let
+                  craneLib = (crane.mkLib linuxPkgs.x86_64).overrideToolchain rustToolchain;
+                in
+                  linuxPkgs.x86_64.callPackage ./nix/wgpu-native {
+                    inherit craneLib inputs;
+                  };
+                aarch64 = let
+                  craneLib = (crane.mkLib linuxPkgs.aarch64).overrideToolchain rustToolchain;
+                in
+                  linuxPkgs.aarch64.callPackage ./nix/wgpu-native {
+                    inherit craneLib inputs;
+                  };
               };
-
-            naga = let
-              baseDrv = {
-                pname = "naga";
-                version = inputs.naga.shortRev;
-                src = inputs.naga;
-
-                cargoLock = ./nix/naga-cargo.lock;
-                cargoExtraArgs = "--all-features";
-
-                doCheck = false;
+              windows = recurseIntoAttrs {
+                x86_64 = let
+                  rustPlatform = pkgs.makeRustPlatform {
+                    rustc = rustToolchain;
+                    cargo = rustToolchain;
+                  };
+                  craneLib = (crane.mkLib windowsPkgs.x86_64).overrideToolchain rustToolchain;
+                in
+                  windowsPkgs.x86_64.callPackage ./nix/wgpu-native {
+                    inherit craneLib inputs rustPlatform;
+                  };
               };
-            in
-              recurseIntoAttrs {
-                linux = recurseIntoAttrs {
-                  x86_64 = let
-                    rustToolchain = linuxPkgs.x86_64.pkgsBuildHost.rust-bin.stable.latest.default.override {
-                      targets = [
-                        "x86_64-unknown-linux-gnu"
-                      ];
-                    };
-                    craneLib = (crane.mkLib linuxPkgs.x86_64).overrideToolchain rustToolchain;
-                  in
-                    craneLib.buildPackage (recursiveUpdate baseDrv {
-                      CARGO_BUILD_TARGET = "x86_64-unknown-linux-gnu";
-                    });
-                };
+              darwin = recurseIntoAttrs {
+                x86_64 = let
+                  craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
+                in
+                  darwinPkgs.x86_64.callPackage ./nix/wgpu-native {
+                    inherit craneLib inputs;
+                  };
+                aarch64 = let
+                  craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
+                in
+                  darwinPkgs.aarch64.callPackage ./nix/wgpu-native {
+                    inherit craneLib inputs;
+                  };
               };
+            };
+
+            naga = recurseIntoAttrs {
+              linux = recurseIntoAttrs {
+                x86_64 = let
+                  craneLib = (crane.mkLib linuxPkgs.x86_64).overrideToolchain rustToolchain;
+                in
+                  linuxPkgs.x86_64.callPackage ./nix/naga {
+                    inherit craneLib inputs;
+                  };
+              };
+            };
 
             # ===== NELUA =====
-            nelua = pkgs.stdenv.mkDerivation {
-              pname = "nelua";
-              version = inputs.nelua.shortRev;
-              src = inputs.nelua;
-
-              patchPhase = ''
-                # patch out hardcoded CC
-                sed -i -e 's/CC=.*//' Makefile
-              '';
-
-              makeFlags = ["PREFIX=$(out)"];
-            };
+            nelua = pkgs.callPackage ./nix/nelua {inherit inputs;};
 
             nelua-decl = pkgs.stdenv.mkDerivation rec {
               pname = "nelua-decl";
@@ -531,6 +382,10 @@
               sed -i -e 's/linklib .opengl32.//' $out/nelua/glfw.nelua
               sed -i -e '1s;^;## cdefine "GLFW_INCLUDE_NONE"\n;' $out/nelua/glfw.nelua
               sed -i -e 's/linklib .glfw.$/linklib "glfw3"/' $out/nelua/glfw.nelua
+
+              mkdir -p $out/include/GLFW
+              cp ${inputs.glfw}/include/GLFW/glfw3.h $out/include/GLFW
+              cp ${inputs.glfw}/include/GLFW/glfw3native.h $out/include/GLFW
             '';
 
             glfwnative-nelua = let
@@ -538,8 +393,11 @@
                 ##[[
                 if ccinfo.is_windows then
                   cdefine 'GLFW_EXPOSE_NATIVE_WIN32'
-                else
+                elseif ccinfo.is_linux then
                   cdefine 'GLFW_EXPOSE_NATIVE_WAYLAND'
+                elseif ccinfo.is_apple then
+                  cdefine 'GLFW_EXPOSE_NATIVE_COCOA'
+                  cinclude '<QuartzCore/CAMetalLayer.h>'
                 end
                 cinclude '<GLFW/glfw3native.h>'
                 ]]
@@ -550,7 +408,7 @@
                   global function glfwGetWin32Adapter(monitor: *GLFWmonitor): cstring <cimport,nodecl> end
                   global function glfwGetWin32Monitor(monitor: *GLFWmonitor): cstring <cimport,nodecl> end
                   global function glfwGetWin32Window(window: *GLFWwindow): HWND <cimport,nodecl> end
-                ## else
+                ## elseif ccinfo.is_linux then
                   global wl_display: type <cimport,nodecl> = @record{}
                   global wl_output: type <cimport,nodecl> = @record{}
                   global wl_surface: type <cimport,nodecl> = @record{}
@@ -558,6 +416,12 @@
                   global function glfwGetWaylandDisplay(): *wl_display <cimport,nodecl> end
                   global function glfwGetWaylandMonitor(monitor: *GLFWmonitor): *wl_output <cimport,nodecl> end
                   global function glfwGetWaylandWindow(window: *GLFWwindow): *wl_surface <cimport,nodecl> end
+                ## elseif ccinfo.is_apple then
+                  global CGDirectDisplayID: type <cimport,nodecl> = @record{}
+                  global NSWindow: type <cimport,nodecl> = @record{}
+
+                  global function glfwGetCocoaMonitor(monitor: *GLFWmonitor): CGDirectDisplayID <cimport,nodecl> end
+                  global function glfwGetCocoaWindow(window: *GLFWwindow): NSWindow <cimport,nodecl> end
                 ## end
               '';
             in
