@@ -14,6 +14,7 @@
   pkg-config,
   wayland,
   wayland-protocols,
+  wayland-scanner,
   libxkbcommon,
   darwin,
 }: let
@@ -46,6 +47,9 @@ in
       ]
       ++ lib.optionals (!stdenv.hostPlatform.isDarwin) [
         cmake
+      ]
+      ++ lib.optionals stdenv.hostPlatform.isLinux [
+        wayland-scanner
       ];
 
     buildInputs = lib.optionals stdenv.hostPlatform.isLinux [
