@@ -12,7 +12,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ ubuntu-latest ]
+        os: [ ubuntu-latest, macos-latest ]
 
     runs-on: ${{ matrix.os }}
 
@@ -25,8 +25,14 @@ jobs:
       - name: Run Build (Linux x86_64)
         run: nix -L build .#app/linux/x86_64
 
+      - name: Run Build (Linux aarch64)
+        run: nix -L build .#app/linux/aarch64
+
       - name: Run Build (NixOS x86_64)
         run: nix -L build .#app/nixos/x86_64
+
+      - name: Run Build (NixOS aarch64)
+        run: nix -L build .#app/nixos/aarch64
 
       - name: Run Build (Windows x86_64)
         run: nix -L build .#app/windows/x86_64
