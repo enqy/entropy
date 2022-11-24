@@ -2,6 +2,7 @@
   lib,
   craneLib,
   stdenv,
+  rustcTargetMap,
   inputs,
 }:
 craneLib.buildPackage {
@@ -12,16 +13,7 @@ craneLib.buildPackage {
   cargoLock = ./Cargo.lock;
   cargoExtraArgs = "--all-features";
 
-  CARGO_BUILD_TARGET = let
-    rustcTargetMap = {
-      "x86_64-unknown-linux-gnu" = "x86_64-unknown-linux-gnu";
-      "aarch64-unknown-linux-gnu" = "aarch64-unknown-linux-gnu";
-      "x86_64-apple-darwin" = "x86_64-apple-darwin";
-      "aarch64-apple-darwin" = "aarch64-apple-darwin";
-      "x86_64-w64-windows-gnu" = "x86_64-pc-windows-gnu";
-    };
-  in
-    rustcTargetMap."${stdenv.hostPlatform.config}";
+  CARGO_BUILD_TARGET = rustcTargetMap."${stdenv.hostPlatform.config}";
 
   doCheck = false;
 }

@@ -110,7 +110,7 @@ wgpuSetLogCallback((@WGPULogCallback)(function(level: WGPULogLevel, msg: cstring
 end))
 wgpuSetLogLevel(WGPULogLevel_Info)
 
-local GLFWContext = require 'entropy.render.glfw_context'
+local Context = require 'entropy.render.glfw_context'
 local Renderer = require "entropy.render.renderer"
 local BasicImpl = require "entropy.render.impl.basic"
 require "entropy.render.impl.compose"
@@ -118,7 +118,7 @@ local Camera = require "entropy.scene.camera"
 local Mesh = require "entropy.scene.mesh"
 local Event = require "entropy.defs.event"
 
-local context: GLFWContext
+local context: Context
 context:init("testing", 512, 512, true)
 
 ##[[

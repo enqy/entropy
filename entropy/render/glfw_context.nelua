@@ -153,6 +153,18 @@ function GLFWContext:init(title: string, width: uint32, height: uint32, vsync: b
       }),
     }
   )
+## elseif ccinfo.is_wasm then
+  self.surface = wgpuInstanceCreateSurface(
+    nilptr,
+    &(@WGPUSurfaceDescriptor){
+      nextInChain = (@*WGPUChainedStruct)(&(@WGPUSurfaceDescriptorFromCanvasHTMLSelector){
+        chain = (@WGPUChainedStruct){
+          sType = WGPUSType_SurfaceDescriptorFromCanvasHTMLSelector,
+        },
+        selector = ".entropy-canvas",
+      }),
+    }
+  )
 ## end
 
   -- request adapter and device

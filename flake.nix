@@ -41,11 +41,11 @@
       flake = false;
     };
     nelua-decl = {
-      url = "git+https://github.com/edubart/nelua-decl?submodules=1";
+      url = "git+https://github.com/edubart/nelua-decl.git?submodules=1";
       flake = false;
     };
     wgpu-native = {
-      url = "git+https://github.com/gfx-rs/wgpu-native?submodules=1";
+      url = "git+ssh://git@github.com/wozeparrot/wgpu-native.git?submodules=1";
       flake = false;
     };
     glfw = {
@@ -82,6 +82,7 @@
       system: let
         zig_overlay = final: prev: {
           zig-cc = final.writeShellScriptBin "zig-cc" ''
+            set -x
             # remove specific args from host cc arg list
             declare -a args=()
             for arg in "$@"; do
@@ -95,8 +96,13 @@
                 -l:libpthread.a) ;;
                 -lgcc) ;;
                 -lgcc_eh) args+=("-lc++") ;;
-                -lgcc_s) args+=("-lunwind") ;;
+                -lgcc_s)
+                  if [[ "$ZIG_CC_TARGET" != "wasm32-freestanding" ]]; then
+                    args+=("-lunwind")
+                  fi
+                ;;
                 -liconv) ;;
+                --gc-sections) ;;
                 *) args+=("$arg") ;;
               esac
             done
@@ -104,6 +110,9 @@
             # cursed hack to use stdenv cc for rust build scripts so that they can run properly on the host system
             if printf '%s\0' "$''\{args[@]}" | grep -qz -- 'build[_-]script'; then
               ${final.stdenv.cc}/bin/cc "$@"
+            elif printf '%s\0' "$''\{args[@]}" | grep -qz -- 'symbols\.o' && [[ "$ZIG_CC_TARGET" == "wasm32-freestanding" ]]; then
+              # cursed hack for wasm
+              ${final.zigpkgs.master}/bin/zig cc $ZIG_CC_FLAGS $NIX_LDFLAGS $CC_FLAGS $NIX_CFLAGS_COMPILE "$''\{args[@]}"
             else
               ${final.zigpkgs.master}/bin/zig cc $ZIG_CC_FLAGS -target $ZIG_CC_TARGET $CC_FLAGS $NIX_CFLAGS_COMPILE "$''\{args[@]}"
             fi
@@ -200,26 +209,48 @@
               overlays = darwinOverlays;
             };
           };
-          rustToolchain = pkgs.rust-bin.stable.latest.default.override {
+          wasmPkgs = import nixpkgs {
+            inherit overlays;
+            localSystem = system;
+            crossSystem = {config = "wasm32-unknown-wasi";};
+          };
+          rustToolchain = pkgs.rust-bin.nightly.latest.default.override {
             targets = [
               "x86_64-unknown-linux-gnu"
               "aarch64-unknown-linux-gnu"
               "x86_64-pc-windows-gnu"
               "x86_64-apple-darwin"
               "aarch64-apple-darwin"
+              "wasm32-unknown-unknown"
             ];
+          };
+          zigTargetMap = {
+            "x86_64-unknown-linux-gnu" = "x86_64-linux-gnu";
+            "aarch64-unknown-linux-gnu" = "aarch64-linux-gnu";
+            "x86_64-apple-darwin" = "x86_64-macos-none";
+            "aarch64-apple-darwin" = "aarch64-macos-none";
+            "x86_64-w64-windows-gnu" = "x86_64-windows-gnu";
+            "wasm32-unknown-wasi" = "wasm32-freestanding";
+          };
+          rustcTargetMap = {
+            "x86_64-unknown-linux-gnu" = "x86_64-unknown-linux-gnu";
+            "aarch64-unknown-linux-gnu" = "aarch64-unknown-linux-gnu";
+            "x86_64-apple-darwin" = "x86_64-apple-darwin";
+            "aarch64-apple-darwin" = "aarch64-apple-darwin";
+            "x86_64-w64-windows-gnu" = "x86_64-pc-windows-gnu";
+            "wasm32-unknown-wasi" = "wasm32-unknown-unknown";
           };
         in
           flattenTree rec {
             app = recurseIntoAttrs {
               linux = recurseIntoAttrs {
                 x86_64 = linuxPkgs.x86_64.callPackage ./nix/app {
-                  inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs;
+                  inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs zigTargetMap;
                   glfw = glfw.linux.x86_64;
                   wgpu-native = wgpu-native.linux.x86_64;
                 } {};
                 aarch64 = linuxPkgs.aarch64.callPackage ./nix/app {
-                  inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs;
+                  inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs zigTargetMap;
                   glfw = glfw.linux.aarch64;
                   wgpu-native = wgpu-native.linux.aarch64;
                 } {};
@@ -227,7 +258,7 @@
               nixos = recurseIntoAttrs {
                 x86_64 =
                   linuxPkgs.x86_64.callPackage ./nix/app {
-                    inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs;
+                    inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs zigTargetMap;
                     glfw = glfw.linux.x86_64;
                     wgpu-native = wgpu-native.linux.x86_64;
                   } {
@@ -235,7 +266,7 @@
                   };
                 aarch64 =
                   linuxPkgs.aarch64.callPackage ./nix/app {
-                    inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs;
+                    inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs zigTargetMap;
                     glfw = glfw.linux.aarch64;
                     wgpu-native = wgpu-native.linux.aarch64;
                   } {
@@ -244,37 +275,52 @@
               };
               windows = recurseIntoAttrs {
                 x86_64 = windowsPkgs.x86_64.callPackage ./nix/app {
-                  inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy windows-nelua inputs;
+                  inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy windows-nelua inputs zigTargetMap;
                   glfw = glfw.windows.x86_64;
                   wgpu-native = wgpu-native.windows.x86_64;
                 } {};
               };
               darwin = recurseIntoAttrs {
                 x86_64 = darwinPkgs.x86_64.callPackage ./nix/app {
-                  inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs;
+                  inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs zigTargetMap;
                   glfw = glfw.darwin.x86_64;
                   wgpu-native = wgpu-native.darwin.x86_64;
                 } {};
                 aarch64 = darwinPkgs.aarch64.callPackage ./nix/app {
-                  inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs;
+                  inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs zigTargetMap;
                   glfw = glfw.darwin.aarch64;
                   wgpu-native = wgpu-native.darwin.aarch64;
                 } {};
               };
+              wasm = wasmPkgs.callPackage ./nix/app {
+                inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs zigTargetMap;
+                wgpu-native = wgpu-native.wasm;
+                zig = pkgs.zigpkgs.master;
+              } {};
             };
 
             # ===== REQUIRED LIBS/BUILD STUFF BELOW =====
             glfw = recurseIntoAttrs {
               linux = recurseIntoAttrs {
-                x86_64 = linuxPkgs.x86_64.callPackage ./nix/glfw {inherit inputs;};
-                aarch64 = linuxPkgs.aarch64.callPackage ./nix/glfw {inherit inputs;};
+                x86_64 = linuxPkgs.x86_64.callPackage ./nix/glfw {
+                  inherit inputs zigTargetMap;
+                };
+                aarch64 = linuxPkgs.aarch64.callPackage ./nix/glfw {
+                  inherit inputs zigTargetMap;
+                };
               };
               windows = recurseIntoAttrs {
-                x86_64 = windowsPkgs.x86_64.callPackage ./nix/glfw {inherit inputs;};
+                x86_64 = windowsPkgs.x86_64.callPackage ./nix/glfw {
+                  inherit inputs zigTargetMap;
+                };
               };
               darwin = recurseIntoAttrs {
-                x86_64 = darwinPkgs.x86_64.callPackage ./nix/glfw {inherit inputs;};
-                aarch64 = darwinPkgs.aarch64.callPackage ./nix/glfw {inherit inputs;};
+                x86_64 = darwinPkgs.x86_64.callPackage ./nix/glfw {
+                  inherit inputs zigTargetMap;
+                };
+                aarch64 = darwinPkgs.aarch64.callPackage ./nix/glfw {
+                  inherit inputs zigTargetMap;
+                };
               };
             };
 
@@ -284,13 +330,13 @@
                   craneLib = (crane.mkLib linuxPkgs.x86_64).overrideToolchain rustToolchain;
                 in
                   linuxPkgs.x86_64.callPackage ./nix/wgpu-native {
-                    inherit craneLib inputs;
+                    inherit craneLib inputs zigTargetMap rustcTargetMap;
                   };
                 aarch64 = let
                   craneLib = (crane.mkLib linuxPkgs.aarch64).overrideToolchain rustToolchain;
                 in
                   linuxPkgs.aarch64.callPackage ./nix/wgpu-native {
-                    inherit craneLib inputs;
+                    inherit craneLib inputs zigTargetMap rustcTargetMap;
                   };
               };
               windows = recurseIntoAttrs {
@@ -302,7 +348,7 @@
                   craneLib = (crane.mkLib windowsPkgs.x86_64).overrideToolchain rustToolchain;
                 in
                   windowsPkgs.x86_64.callPackage ./nix/wgpu-native {
-                    inherit craneLib inputs rustPlatform;
+                    inherit craneLib inputs rustPlatform zigTargetMap rustcTargetMap;
                   };
               };
               darwin = recurseIntoAttrs {
@@ -310,15 +356,22 @@
                   craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
                 in
                   darwinPkgs.x86_64.callPackage ./nix/wgpu-native {
-                    inherit craneLib inputs;
+                    inherit craneLib inputs zigTargetMap rustcTargetMap;
                   };
                 aarch64 = let
                   craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
                 in
                   darwinPkgs.aarch64.callPackage ./nix/wgpu-native {
-                    inherit craneLib inputs;
+                    inherit craneLib inputs zigTargetMap rustcTargetMap;
                   };
               };
+              wasm = let
+                craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
+              in
+                wasmPkgs.callPackage ./nix/wgpu-native {
+                  inherit craneLib inputs zigTargetMap rustcTargetMap;
+                  zig = pkgs.zigpkgs.master;
+                };
             };
 
             naga = recurseIntoAttrs {
@@ -327,7 +380,7 @@
                   craneLib = (crane.mkLib linuxPkgs.x86_64).overrideToolchain rustToolchain;
                 in
                   linuxPkgs.x86_64.callPackage ./nix/naga {
-                    inherit craneLib inputs;
+                    inherit craneLib inputs rustcTargetMap;
                   };
               };
             };

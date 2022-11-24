@@ -134,12 +134,12 @@
         "revCount": 159,
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/edubart/nelua-decl"
+        "url": "https://github.com/edubart/nelua-decl.git"
       },
       "original": {
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/edubart/nelua-decl"
+        "url": "https://github.com/edubart/nelua-decl.git"
       }
     },
     "nixpkgs": {
@@ -224,19 +224,19 @@
     "wgpu-native": {
       "flake": false,
       "locked": {
-        "lastModified": 1668024866,
-        "narHash": "sha256-vyqlb6kAlT+b31XcI+w6cJU30FTV51146+LnM4aJG5A=",
+        "lastModified": 1669331532,
+        "narHash": "sha256-1+DnVllw8/UJ4Kh2cYOM/f01APyVvZUlVGe9NGrBQtE=",
         "ref": "refs/heads/master",
-        "rev": "6afce0928342fc676e8bc6824e74f4926a9e8af3",
-        "revCount": 633,
+        "rev": "bc5b5c6800369b7744fc4430f27f5bfb9865c0a4",
+        "revCount": 642,
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/gfx-rs/wgpu-native"
+        "url": "ssh://git@github.com/wozeparrot/wgpu-native.git"
       },
       "original": {
         "submodules": true,
         "type": "git",
-        "url": "https://github.com/gfx-rs/wgpu-native"
+        "url": "ssh://git@github.com/wozeparrot/wgpu-native.git"
       }
     },
     "zig": {

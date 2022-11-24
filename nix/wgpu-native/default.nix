@@ -2,6 +2,8 @@
   lib,
   craneLib,
   stdenvNoCC,
+  rustcTargetMap,
+  zigTargetMap,
   rustPlatform,
   pkgsBuildBuild,
   inputs,
@@ -12,6 +14,7 @@
   zig-lib,
   zig-ranlib,
   zig-rc,
+  zig,
   cargo,
   darwin,
 }: let
@@ -36,7 +39,8 @@ in
         zig-rc
       ]
       # doesn't work when building for darwin from a non-darwin host
-      ++ lib.optionals (!stdenv.hostPlatform.isDarwin) [
+      # also doesn't work when building for wasm
+      ++ lib.optionals (!stdenv.hostPlatform.isDarwin && !stdenv.hostPlatform.isWasm) [
         rustPlatform.bindgenHook
       ];
 
@@ -53,42 +57,38 @@ in
       patch -p1 < ${./ffi.patch} || true
     '';
 
-    preConfigure = let
-      rustcTargetMap = {
-        "x86_64-unknown-linux-gnu" = "x86_64-unknown-linux-gnu";
-        "aarch64-unknown-linux-gnu" = "aarch64-unknown-linux-gnu";
-        "x86_64-apple-darwin" = "x86_64-apple-darwin";
-        "aarch64-apple-darwin" = "aarch64-apple-darwin";
-        "x86_64-w64-windows-gnu" = "x86_64-pc-windows-gnu";
-      };
-      zigTargetMap = {
-        "x86_64-unknown-linux-gnu" = "x86_64-linux-gnu";
-        "aarch64-unknown-linux-gnu" = "aarch64-linux-gnu";
-        "x86_64-apple-darwin" = "x86_64-macos-none";
-        "aarch64-apple-darwin" = "aarch64-macos-none";
-        "x86_64-w64-windows-gnu" = "x86_64-windows-gnu";
-      };
-    in ''
-      export ZIG_LOCAL_CACHE_DIR="$TMPDIR/zig-cache"
-      export ZIG_GLOBAL_CACHE_DIR="$ZIG_LOCAL_CACHE_DIR"
+    preConfigure =
+      ''
+        export ZIG_LOCAL_CACHE_DIR="$TMPDIR/zig-cache"
+        export ZIG_GLOBAL_CACHE_DIR="$ZIG_LOCAL_CACHE_DIR"
 
-      export CARGO_BUILD_TARGET=${rustcTargetMap."${stdenv.hostPlatform.config}"}
-      export CARGO_TARGET_${lib.stringAsChars (x:
-        if x == "-"
-        then "_"
-        else x) (lib.toUpper rustcTargetMap."${stdenv.hostPlatform.config}")}_LINKER=zig-cc
-      export CC_"${lib.stringAsChars (x:
-        if x == "-"
-        then "_"
-        else x)
-      stdenv.hostPlatform.config}"=zig-cc
-      export AR_"${lib.stringAsChars (x:
-        if x == "-"
-        then "_"
-        else x)
-      stdenv.hostPlatform.config}"=zig-ar
-      export ZIG_CC_TARGET=${zigTargetMap."${stdenv.hostPlatform.config}"}
-    '';
+        export CARGO_BUILD_TARGET=${rustcTargetMap."${stdenv.hostPlatform.config}"}
+        export CARGO_TARGET_${lib.stringAsChars (x:
+          if x == "-"
+          then "_"
+          else x) (lib.toUpper rustcTargetMap."${stdenv.hostPlatform.config}")}_LINKER=zig-cc
+        export CC_"${lib.stringAsChars (x:
+          if x == "-"
+          then "_"
+          else x)
+        stdenv.hostPlatform.config}"=zig-cc
+        export AR_"${lib.stringAsChars (x:
+          if x == "-"
+          then "_"
+          else x)
+        stdenv.hostPlatform.config}"=zig-ar
+        export ZIG_CC_TARGET=${zigTargetMap."${stdenv.hostPlatform.config}"}
+        export RUSTFLAGS="-C target-feature=-crt-static"
+      ''
+      + lib.optionalString stdenv.hostPlatform.isWasm ''
+        export CARGO_TARGET_${lib.stringAsChars (x:
+          if x == "-"
+          then "_"
+          else x) (lib.toUpper rustcTargetMap."${stdenv.buildPlatform.config}")}_LINKER=zig-cc
+        export CC_wasm32_unknown_unknown=zig-cc
+        export AR_wasm32_unknown_unknown=zig-ar
+        export RUSTFLAGS="-C linker-flavor=ld --cfg=web_sys_unstable_apis $''\{RUSTFLAGS}"
+      '';
 
     ZIG_CC_FLAGS = lib.optionals stdenv.hostPlatform.isDarwin [
       "--sysroot=${apple_sdk.MacOSX-SDK}"
@@ -99,13 +99,19 @@ in
       "-F${apple_sdk.frameworks.QuartzCore}/Library/Frameworks"
     ];
 
-    # manually do what rustPlatform.bindgenHook does when building for darwin
-    LIBCLANG_PATH = lib.optionalString stdenv.hostPlatform.isDarwin "${pkgsBuildBuild.clang.cc.lib}/lib";
-    BINDGEN_EXTRA_CLANG_ARGS = lib.optionals stdenv.hostPlatform.isDarwin [
-      "--sysroot=${apple_sdk.MacOSX-SDK}"
-      "-I${apple_sdk.MacOSX-SDK}/usr/include"
-      "-I${apple_sdk.frameworks.Kernel}/Library/Frameworks/Kernel.framework/Headers"
-    ];
+    # manually do what rustPlatform.bindgenHook does when building for darwin and wasm
+    LIBCLANG_PATH = lib.optionalString (stdenv.hostPlatform.isDarwin || stdenv.hostPlatform.isWasm) "${pkgsBuildBuild.clang.cc.lib}/lib";
+    BINDGEN_EXTRA_CLANG_ARGS =
+      lib.optionals stdenv.hostPlatform.isDarwin [
+        "--sysroot=${apple_sdk.MacOSX-SDK}"
+        "-I${apple_sdk.MacOSX-SDK}/usr/include"
+        "-I${apple_sdk.frameworks.Kernel}/Library/Frameworks/Kernel.framework/Headers"
+      ]
+      ++ lib.optionals stdenv.hostPlatform.isWasm [
+        "-I${zig}/lib/libc/include/wasm-freestanding-musl"
+        "-I${zig}/lib/libc/include/generic-musl/"
+        "-I${zig}/lib/libc/musl/include/"
+      ];
 
     preInstall = ''
       mkdir -p $out/include
@@ -118,7 +124,7 @@ in
 
     postInstall =
       lib.optionalString (stdenv.hostPlatform.isMinGW || stdenv.hostPlatform.isDarwin) ''
-        # need to remove compiler_builtins on windows because they collide with zig ones
+        # need to remove compiler_builtins on windows and darwin because they collide with zig ones
         if [[ -f $out/lib/libwgpu_native.a ]]; then
           zig-ar t $out/lib/libwgpu_native.a | grep compiler_builtins | xargs -I % zig-ar dv $out/lib/libwgpu_native.a %
         fi
@@ -127,7 +133,14 @@ in
         # if [[ -f $out/lib/libwgpu_native.dylib ]]; then
         #   rm $out/lib/libwgpu_native.dylib
         # fi
+      ''
+      + lib.optionalString stdenv.hostPlatform.isWasm ''
+        if [[ -f $out/lib/libwgpu_native.a ]]; then
+          zig-ranlib $out/lib/libwgpu_native.a
+        fi
       '';
+
+    dontStrip = stdenv.hostPlatform.isWasm;
 
     doCheck = false;
 

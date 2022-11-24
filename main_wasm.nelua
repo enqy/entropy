@@ -1,0 +1,35 @@
+## pragmas.nogc = true
+
+local World = require "entropy.world"
+local world: World
+
+local Context = require 'entropy.render.wasm_context'
+local Renderer = require "entropy.render.renderer"
+local BasicImpl = require "entropy.render.impl.basic"
+require "entropy.render.impl.compose"
+local Camera = require "entropy.scene.camera"
+local Mesh = require "entropy.scene.mesh"
+local Event = require "entropy.defs.event"
+
+local context: Context
+context:init(".entropy-canvas", 512, 512, true)
+
+local renderer: Renderer(BasicImpl)
+
+local function onInit() <cexport, codename 'onInit'>
+  renderer:init(context.device, context.format, context.width, context.height)
+
+  -- setup camera
+  local cameras = world:s("entropy.scene.cameras", Camera)
+  local camera_idx = cameras:create({
+    pos = { 10, 10, 10 },
+    rot = { 0, 0, 0 },
+
+    fov = 90,
+
+    z_near = 0.1,
+    z_far = 10000,
+  })
+  cameras[camera_idx]:look_at({ 0, 0, 0 })
+end
+

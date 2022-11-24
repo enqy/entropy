@@ -2,6 +2,7 @@
   lib,
   stdenv,
   stdenvNoCC,
+  zigTargetMap,
   inputs,
   makeWrapper,
   zig-cc,
@@ -11,13 +12,14 @@
   zig-lib,
   zig-ranlib,
   zig-rc,
+  zig ? null,
   nelua,
   glfw-nelua,
   glfwnative-nelua,
   wgpu-nelua,
   entropy,
   windows-nelua ? null,
-  glfw,
+  glfw ? null,
   wgpu-native,
   libxkbcommon,
   wayland,
@@ -39,10 +41,12 @@ in
     neluaModules =
       extraNeluaModules
       ++ [
-        glfw-nelua
-        glfwnative-nelua
         wgpu-nelua
         entropy
+      ]
+      ++ lib.optionals (!stdenv.hostPlatform.isWasm) [
+        glfw-nelua
+        glfwnative-nelua
       ]
       ++ lib.optionals stdenv.hostPlatform.isMinGW [
         windows-nelua
@@ -73,13 +77,6 @@ in
       RC = "zig-rc";
 
       preConfigure = let
-        zigTargetMap = {
-          "x86_64-unknown-linux-gnu" = "x86_64-linux-gnu";
-          "aarch64-unknown-linux-gnu" = "aarch64-linux-gnu";
-          "x86_64-apple-darwin" = "x86_64-macos-none";
-          "aarch64-apple-darwin" = "aarch64-macos-none";
-          "x86_64-w64-windows-gnu" = "x86_64-windows-gnu";
-        };
         neluaPath = "./?.nelua;${nelua}/lib/nelua/lib/?.nelua;" + (lib.foldr (module: path: "${module}/nelua/?.nelua;" + path) ";" neluaModules);
       in
         ''
@@ -143,7 +140,11 @@ in
       configurePhase = ''
         runHook preConfigure
 
-        nelua main.nelua --release --print-code > ${
+        nelua ${
+          if stdenv.hostPlatform.isWasm
+          then "main_wasm.nelua"
+          else "main.nelua"
+        } --release --print-code > ${
           if stdenv.hostPlatform.isDarwin
           then "main.m"
           else "main.c"
@@ -160,8 +161,10 @@ in
 
       ZIG_CC_FLAGS =
         [
-          "-L${glfw}/lib"
           "-L${wgpu-native}/lib"
+        ]
+        ++ lib.optionals (!stdenv.hostPlatform.isWasm) [
+          "-L${glfw}/lib"
         ]
         ++ lib.optionals stdenv.hostPlatform.isLinux [
           "-I${wayland.dev}/include"
@@ -199,6 +202,13 @@ in
           "-framework AppKit"
           "-F${apple_sdk.frameworks.Foundation}/Library/Frameworks"
           "-framework Foundation"
+        ]
+        ++ lib.optionals stdenv.hostPlatform.isWasm [
+          "-I${zig}/lib/libc/include/wasm-freestanding-musl"
+          "-I${zig}/lib/libc/include/generic-musl/"
+          "-I${zig}/lib/libc/musl/include/"
+          "-shared"
+          "-Wl,--export=onInit"
         ];
 
       buildPhase = ''
@@ -208,7 +218,11 @@ in
           if stdenv.hostPlatform.isDarwin
           then "main.m"
           else "main.c"
-        } -lwgpu_native -lglfw3 -lunwind
+        } -lwgpu_native ${
+          if stdenv.hostPlatform.isWasm
+          then ""
+          else "-lglfw3 -lunwind"
+        }
 
         runHook postBuild
       '';
@@ -224,6 +238,7 @@ in
 
       # patch the built binaries if targetting NixOS
       # we use the normal stdenv here instead of stdenvNoCC because we require access to the NixOS C compiler
+      # we also do some renaming here just to make the final binaries nicer
       postInstall =
         lib.optionalString nixos ''
           patchelf --set-interpreter $(cat ${stdenv'.cc}/nix-support/dynamic-linker) $out/bin/${pname}
@@ -232,5 +247,8 @@ in
         ''
         + lib.optionalString stdenv.hostPlatform.isMinGW ''
           mv $out/bin/${pname} $out/bin/${pname}.exe
+        ''
+        + lib.optionalString stdenv.hostPlatform.isWasm ''
+          mv $out/bin/${pname} $out/bin/${pname}.wasm
         '';
     }

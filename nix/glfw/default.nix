@@ -1,6 +1,7 @@
 {
   lib,
   stdenvNoCC,
+  zigTargetMap,
   inputs,
   zig-cc,
   zig-ld,
@@ -66,15 +67,7 @@ in
     RANLIB = "zig-ranlib";
     RC = "zig-rc";
 
-    preConfigure = let
-      zigTargetMap = {
-        "x86_64-unknown-linux-gnu" = "x86_64-linux-gnu";
-        "aarch64-unknown-linux-gnu" = "aarch64-linux-gnu";
-        "x86_64-apple-darwin" = "x86_64-macos-none";
-        "aarch64-apple-darwin" = "aarch64-macos-none";
-        "x86_64-w64-windows-gnu" = "x86_64-windows-gnu";
-      };
-    in
+    preConfigure =
       ''
         export ZIG_LOCAL_CACHE_DIR="$TMPDIR/zig-cache"
         export ZIG_GLOBAL_CACHE_DIR="$ZIG_LOCAL_CACHE_DIR"

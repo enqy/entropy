@@ -1,0 +1,112 @@
+require "wgpu"
+
+local render = require "entropy.render"
+local Event = require "entropy.defs.event"
+
+require "list"
+
+local WASMContext: type = @record{
+  width: uint32,
+  height: uint32,
+  vsync: boolean,
+
+  user_pointer: pointer,
+  resize_callback: function(pointer, uint32, uint32): void,
+
+  surface: WGPUSurface,
+
+  adapter: WGPUAdapter,
+  device: WGPUDevice,
+
+  format: WGPUTextureFormat,
+
+  swapchain: WGPUSwapChain,
+
+  event_queue: list(Event),
+}
+
+function WASMContext:create_swapchain(): void
+  local present_mode: WGPUPresentMode
+  if self.vsync then
+    present_mode = WGPUPresentMode_Fifo
+  else
+    present_mode = WGPUPresentMode_Mailbox
+  end
+
+  self.swapchain = wgpuDeviceCreateSwapChain(
+    self.device,
+    self.surface,
+    &(@WGPUSwapChainDescriptor){
+      usage = WGPUTextureUsage_RenderAttachment,
+      format = self.format,
+      width = self.width,
+      height = self.height,
+      presentMode = present_mode,
+    }
+  )
+end
+
+function WASMContext:resize(width: uint32, height: uint32): void
+  self.width = width
+  self.height = height
+  self:create_swapchain()
+end
+
+function WASMContext:init(selector: string, width: uint32, height: uint32, vsync: boolean): void
+  -- create webgpu surface for window
+  self.surface = wgpuInstanceCreateSurface(
+    nilptr,
+    &(@WGPUSurfaceDescriptor){
+      nextInChain = (@*WGPUChainedStruct)(&(@WGPUSurfaceDescriptorFromCanvasHTMLSelector){
+        chain = (@WGPUChainedStruct){
+          sType = WGPUSType_SurfaceDescriptorFromCanvasHTMLSelector,
+        },
+        selector = selector,
+      }),
+    }
+  )
+
+  -- request adapter and device
+  self.adapter, self.device = render.request_adapter_device(self.surface)
+
+  -- get surface format
+  self.format = wgpuSurfaceGetPreferredFormat(self.surface, self.adapter)
+
+  -- create initial swapchain
+  self.vsync = vsync
+  self:create_swapchain()
+end
+
+function WASMContext:cleanup(): void
+  wgpuDeviceDrop(self.device)
+  wgpuAdapterDrop(self.adapter)
+end
+
+function WASMContext:view(): WGPUTextureView <inline>
+  return wgpuSwapChainGetCurrentTextureView(self.swapchain)
+end
+
+function WASMContext:drop_view(view: WGPUTextureView): void <inline>
+  wgpuTextureViewDrop(view)
+end
+
+function WASMContext:present(): void <inline>
+  wgpuSwapChainPresent(self.swapchain)
+end
+
+function WASMContext:should_close(): boolean <inline>
+  return false
+end
+
+function WASMContext:close(): void <inline>
+end
+
+function WASMContext:poll_event(): (boolean, *list(Event)) <inline>
+  if self.event_queue:empty() then
+    return false, &self.event_queue
+  else
+    return true, &self.event_queue
+  end
+end
+
+return WASMContext
