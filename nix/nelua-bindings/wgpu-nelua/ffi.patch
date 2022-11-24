@@ -1,0 +1,13 @@
+diff --git a/ffi/wgpu.h b/ffi/wgpu.h
+index 780594c..45b47cd 100644
+--- a/ffi/wgpu.h
++++ b/ffi/wgpu.h
+@@ -69,7 +69,7 @@ typedef struct WGPUSupportedLimitsExtras {
+ typedef struct WGPUPushConstantRange {
+     WGPUShaderStageFlags stages;
+     uint32_t start;
+-    uint32_t end;
++    uint32_t stop;
+ } WGPUPushConstantRange;
+ 
+ typedef struct WGPUPipelineLayoutExtras {

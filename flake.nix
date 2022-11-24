@@ -40,6 +40,10 @@
       url = "github:edubart/nelua-lang";
       flake = false;
     };
+    nelua-decl = {
+      url = "git+https://github.com/edubart/nelua-decl?submodules=1";
+      flake = false;
+    };
     wgpu-native = {
       url = "git+https://github.com/gfx-rs/wgpu-native?submodules=1";
       flake = false;
@@ -72,13 +76,12 @@
     eachSystem [
       "x86_64-linux"
       "aarch64-linux"
-      "x86_64-darwin"
+      # "x86_64-darwin" # currently broken
     ]
     (
       system: let
-        overlay = final: prev: {
+        zig_overlay = final: prev: {
           zig-cc = final.writeShellScriptBin "zig-cc" ''
-            set -x
             # remove specific args from host cc arg list
             declare -a args=()
             for arg in "$@"; do
@@ -129,7 +132,7 @@
           '';
         };
         overlays = [
-          overlay
+          zig_overlay
           (import rust-overlay)
           zig.overlays.default
         ];
@@ -142,27 +145,24 @@
             x86_64 = import nixpkgs {
               inherit overlays;
               localSystem = system;
-              crossSystem =
-                if (system == "x86_64-linux")
-                then null
-                else {config = "x86_64-unknown-linux-gnu";};
+              crossSystem = "x86_64-linux";
             };
             aarch64 = import nixpkgs {
               inherit overlays;
               localSystem = system;
-              crossSystem = {config = "aarch64-unknown-linux-gnu";};
+              crossSystem = "aarch64-linux";
             };
           };
           windowsPkgs = {
             x86_64 = import nixpkgs {
               inherit overlays;
               localSystem = system;
-              crossSystem = {config = "x86_64-w64-mingw32";};
+              crossSystem = "x86_64-w64-mingw32";
               config.allowUnsupportedSystem = true;
             };
           };
           darwinPkgs = let
-            overlays' =
+            darwinOverlays =
               overlays
               ++ [
                 (final: prev: {
@@ -189,15 +189,15 @@
           in {
             x86_64 = import nixpkgs {
               localSystem = system;
-              crossSystem = {config = "x86_64-apple-darwin";};
+              crossSystem = "x86_64-darwin";
               config.allowUnsupportedSystem = true;
-              overlays = overlays';
+              overlays = darwinOverlays;
             };
             aarch64 = import nixpkgs {
               localSystem = system;
-              crossSystem = {config = "aarch64-apple-darwin";};
+              crossSystem = "aarch64-darwin";
               config.allowUnsupportedSystem = true;
-              overlays = overlays';
+              overlays = darwinOverlays;
             };
           };
           rustToolchain = pkgs.rust-bin.stable.latest.default.override {
@@ -335,144 +335,22 @@
             # ===== NELUA =====
             nelua = pkgs.callPackage ./nix/nelua {inherit inputs;};
 
-            nelua-decl = pkgs.stdenv.mkDerivation rec {
-              pname = "nelua-decl";
-              version = "63b4b40a582d9e6ceb697d6e58220e164ffd91fc";
-
-              src = pkgs.fetchFromGitHub {
-                owner = "edubart";
-                repo = "nelua-decl";
-                rev = version;
-                fetchSubmodules = true;
-                sha256 = "sha256-Kh1HeTz4AFCoZeeIbrxtLR5bGJtSDECjxTZImIH5kPg=";
-              };
-
-              nativeBuildInputs = with pkgs; [
-                pkg-config
-                gcc
-              ];
-
-              buildInputs = with pkgs; [
-                gmp
-                lua
-              ];
-
-              buildPhase = ''
-                make -C gcc-lua
-              '';
-
-              installPhase = ''
-                mkdir -p $out/lib
-                cp gcc-lua/gcc/gcclua.so $out/lib/
-                cp *.lua $out/lib/
-
-                mkdir -p $out/nelua
-                shopt -s globstar
-                for f in **/*.nelua; do
-                  cp "$f" $out/nelua
-                done
-              '';
-            };
+            nelua-decl = pkgs.callPackage ./nix/nelua-decl {inherit inputs;};
 
             # ===== NELUA BINDINGS =====
-            glfw-nelua = pkgs.runCommand "glfw-nelua" {} ''
-              mkdir -p $out/nelua
-              cp ${nelua-decl}/nelua/glfw.nelua $out/nelua
-              sed -i -e 's/linklib .GL.//' $out/nelua/glfw.nelua
-              sed -i -e 's/linklib .opengl32.//' $out/nelua/glfw.nelua
-              sed -i -e '1s;^;## cdefine "GLFW_INCLUDE_NONE"\n;' $out/nelua/glfw.nelua
-              sed -i -e 's/linklib .glfw.$/linklib "glfw3"/' $out/nelua/glfw.nelua
+            glfw-nelua = pkgs.callPackage ./nix/nelua-bindings/glfw-nelua {
+              inherit inputs nelua-decl;
+            };
 
-              mkdir -p $out/include/GLFW
-              cp ${inputs.glfw}/include/GLFW/glfw3.h $out/include/GLFW
-              cp ${inputs.glfw}/include/GLFW/glfw3native.h $out/include/GLFW
-            '';
+            glfwnative-nelua = pkgs.callPackage ./nix/nelua-bindings/glfwnative-nelua {};
 
-            glfwnative-nelua = let
-              glfwnative_nelua = pkgs.writeText "glfwnative.nelua" ''
-                ##[[
-                if ccinfo.is_windows then
-                  cdefine 'GLFW_EXPOSE_NATIVE_WIN32'
-                elseif ccinfo.is_linux then
-                  cdefine 'GLFW_EXPOSE_NATIVE_WAYLAND'
-                elseif ccinfo.is_apple then
-                  cdefine 'GLFW_EXPOSE_NATIVE_COCOA'
-                  cinclude '<QuartzCore/CAMetalLayer.h>'
-                end
-                cinclude '<GLFW/glfw3native.h>'
-                ]]
+            wgpu-nelua = pkgs.callPackage ./nix/nelua-bindings/wgpu-nelua {
+              inherit inputs nelua-decl;
+            };
 
-                ## if ccinfo.is_windows then
-                  require 'windows'
-
-                  global function glfwGetWin32Adapter(monitor: *GLFWmonitor): cstring <cimport,nodecl> end
-                  global function glfwGetWin32Monitor(monitor: *GLFWmonitor): cstring <cimport,nodecl> end
-                  global function glfwGetWin32Window(window: *GLFWwindow): HWND <cimport,nodecl> end
-                ## elseif ccinfo.is_linux then
-                  global wl_display: type <cimport,nodecl> = @record{}
-                  global wl_output: type <cimport,nodecl> = @record{}
-                  global wl_surface: type <cimport,nodecl> = @record{}
-
-                  global function glfwGetWaylandDisplay(): *wl_display <cimport,nodecl> end
-                  global function glfwGetWaylandMonitor(monitor: *GLFWmonitor): *wl_output <cimport,nodecl> end
-                  global function glfwGetWaylandWindow(window: *GLFWwindow): *wl_surface <cimport,nodecl> end
-                ## elseif ccinfo.is_apple then
-                  global CGDirectDisplayID: type <cimport,nodecl> = @record{}
-                  global NSWindow: type <cimport,nodecl> = @record{}
-
-                  global function glfwGetCocoaMonitor(monitor: *GLFWmonitor): CGDirectDisplayID <cimport,nodecl> end
-                  global function glfwGetCocoaWindow(window: *GLFWwindow): NSWindow <cimport,nodecl> end
-                ## end
-              '';
-            in
-              pkgs.runCommand "glfwnative-nelua" {} ''
-                mkdir -p $out/nelua
-                cp ${glfwnative_nelua} $out/nelua/glfwnative.nelua
-              '';
-
-            wgpu-nelua = let
-              wgpu_lua = pkgs.writeText "wgpu.lua" ''
-                local nldecl = require 'nldecl'
-
-                nldecl.include_names = {
-                  '^WGPU',
-                  '^wgpu',
-                }
-
-                nldecl.prepend_code = [=[
-                ##[[
-                cinclude '<webgpu.h>'
-                cinclude '<wgpu.h>'
-                linklib 'wgpu_native'
-                ]]
-                ]=]
-              '';
-              wgpu_c = pkgs.writeText "wgpu.c" ''
-                #include "webgpu.h"
-                #include "wgpu.h"
-              '';
-            in
-              pkgs.runCommand "wgpu-nelua" {
-                nativeBuildInputs = with pkgs; [
-                  gcc
-                ];
-              } ''
-                cp ${wgpu-native.linux.x86_64}/include/*.h .
-                cp ${wgpu_lua} wgpu.lua
-                cp ${wgpu_c} wgpu.c
-
-                mkdir -p $out/nelua/
-                export LUA_PATH="${nelua-decl}/lib/?.lua;;"
-                gcc -fplugin=${nelua-decl}/lib/gcclua.so -fplugin-arg-gcclua-script=wgpu.lua -S wgpu.c -I. > $out/nelua/wgpu.nelua
-
-                mkdir -p $out/include
-                cp *.h $out/include
-              '';
-
-            windows-nelua = pkgs.runCommand "windows-nelua" {} ''
-              mkdir -p $out/nelua
-              cp ${nelua-decl}/nelua/windows.nelua $out/nelua
-            '';
+            windows-nelua = pkgs.callPackage ./nix/nelua-bindings/windows-nelua {
+              inherit nelua-decl;
+            };
 
             # ===== ACTUAL ENTROPY ENGINE =====
             entropy = let

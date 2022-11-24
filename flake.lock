@@ -124,6 +124,24 @@
         "type": "github"
       }
     },
+    "nelua-decl": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1642717270,
+        "narHash": "sha256-Kh1HeTz4AFCoZeeIbrxtLR5bGJtSDECjxTZImIH5kPg=",
+        "ref": "refs/heads/main",
+        "rev": "63b4b40a582d9e6ceb697d6e58220e164ffd91fc",
+        "revCount": 159,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/edubart/nelua-decl"
+      },
+      "original": {
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/edubart/nelua-decl"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1668765800,
@@ -148,6 +166,7 @@
         "glfw": "glfw",
         "naga": "naga",
         "nelua": "nelua",
+        "nelua-decl": "nelua-decl",
         "nixpkgs": "nixpkgs",
         "rust-overlay": "rust-overlay_2",
         "wgpu-native": "wgpu-native",

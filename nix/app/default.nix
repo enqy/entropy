@@ -78,7 +78,7 @@ in
           "aarch64-unknown-linux-gnu" = "aarch64-linux-gnu";
           "x86_64-apple-darwin" = "x86_64-macos-none";
           "aarch64-apple-darwin" = "aarch64-macos-none";
-          "x86_64-w64-mingw32" = "x86_64-windows-gnu";
+          "x86_64-w64-windows-gnu" = "x86_64-windows-gnu";
         };
         neluaPath = "./?.nelua;${nelua}/lib/nelua/lib/?.nelua;" + (lib.foldr (module: path: "${module}/nelua/?.nelua;" + path) ";" neluaModules);
       in
@@ -224,9 +224,13 @@ in
 
       # patch the built binaries if targetting NixOS
       # we use the normal stdenv here instead of stdenvNoCC because we require access to the NixOS C compiler
-      postInstall = lib.optionalString nixos ''
-        patchelf --set-interpreter $(cat ${stdenv'.cc}/nix-support/dynamic-linker) $out/bin/${pname}
-        wrapProgram $out/bin/${pname} \
-          --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [wayland libxkbcommon vulkan-loader]}
-      '';
+      postInstall =
+        lib.optionalString nixos ''
+          patchelf --set-interpreter $(cat ${stdenv'.cc}/nix-support/dynamic-linker) $out/bin/${pname}
+          wrapProgram $out/bin/${pname} \
+            --prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [wayland libxkbcommon vulkan-loader]}
+        ''
+        + lib.optionalString stdenv.hostPlatform.isMinGW ''
+          mv $out/bin/${pname} $out/bin/${pname}.exe
+        '';
     }

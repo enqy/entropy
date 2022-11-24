@@ -4,6 +4,6 @@ main
 main.c
 
 # testing purposes
-glfw.nelua
-glfwnative.nelua
-wgpu.nelua
+/glfw.nelua
+/glfwnative.nelua
+/wgpu.nelua

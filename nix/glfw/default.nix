@@ -72,7 +72,7 @@ in
         "aarch64-unknown-linux-gnu" = "aarch64-linux-gnu";
         "x86_64-apple-darwin" = "x86_64-macos-none";
         "aarch64-apple-darwin" = "aarch64-macos-none";
-        "x86_64-w64-mingw32" = "x86_64-windows-gnu";
+        "x86_64-w64-windows-gnu" = "x86_64-windows-gnu";
       };
     in
       ''

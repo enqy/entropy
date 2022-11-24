@@ -1,0 +1,33 @@
+##[[
+if ccinfo.is_windows then
+  cdefine 'GLFW_EXPOSE_NATIVE_WIN32'
+elseif ccinfo.is_linux then
+  cdefine 'GLFW_EXPOSE_NATIVE_WAYLAND'
+elseif ccinfo.is_apple then
+  cdefine 'GLFW_EXPOSE_NATIVE_COCOA'
+  cinclude '<QuartzCore/CAMetalLayer.h>'
+end
+cinclude '<GLFW/glfw3native.h>'
+]]
+
+## if ccinfo.is_windows then
+  require 'windows'
+
+  global function glfwGetWin32Adapter(monitor: *GLFWmonitor): cstring <cimport,nodecl> end
+  global function glfwGetWin32Monitor(monitor: *GLFWmonitor): cstring <cimport,nodecl> end
+  global function glfwGetWin32Window(window: *GLFWwindow): HWND <cimport,nodecl> end
+## elseif ccinfo.is_linux then
+  global wl_display: type <cimport,nodecl> = @record{}
+  global wl_output: type <cimport,nodecl> = @record{}
+  global wl_surface: type <cimport,nodecl> = @record{}
+
+  global function glfwGetWaylandDisplay(): *wl_display <cimport,nodecl> end
+  global function glfwGetWaylandMonitor(monitor: *GLFWmonitor): *wl_output <cimport,nodecl> end
+  global function glfwGetWaylandWindow(window: *GLFWwindow): *wl_surface <cimport,nodecl> end
+## elseif ccinfo.is_apple then
+  global CGDirectDisplayID: type <cimport,nodecl> = @record{}
+  global NSWindow: type <cimport,nodecl> = @record{}
+
+  global function glfwGetCocoaMonitor(monitor: *GLFWmonitor): CGDirectDisplayID <cimport,nodecl> end
+  global function glfwGetCocoaWindow(window: *GLFWwindow): NSWindow <cimport,nodecl> end
+## end
