@@ -32,8 +32,8 @@ function World:s(name: string <comptime>, T: type): auto <inline>
     World.value.storages[name.value] = T.value
   else
     if World.value.storages[name.value] ~= T.value then
-      print("storage: `" .. tostring(name.value) .. "` was registered for type: `" .. tostring(World.value.storages[name.value]) .. "`")
-      print("storage: `" .. tostring(name.value) .. "` is being accessed with type: `" .. tostring(T.value) .. "`")
+      io.stderr:write("storage: `" .. tostring(name.value) .. "` was registered for type: `" .. tostring(World.value.storages[name.value]) .. "`")
+      io.stderr:write("storage: `" .. tostring(name.value) .. "` is being accessed with type: `" .. tostring(T.value) .. "`")
       static_error("storage: `%s` was registered for type: `%s` and is being accessed with type: `%s`", name.value, World.value.storages[name.value], T.value)
     end
   end
