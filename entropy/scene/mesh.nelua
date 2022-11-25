@@ -74,6 +74,49 @@ function Mesh.load_from_obj(path: string): Mesh
   return result
 end
 
+function Mesh.load_from_obj_comptime(path: string <comptime>): Mesh
+  ##[[
+  local file = io.open(path.value, "rb")
+  file:seek("set", 0)
+  local code = file:read("*a")
+  ]]
+
+  local result: Mesh
+
+  local vertices: vector(Vertex)
+  local indices: vector(uint32)
+
+  local code = #[code]#
+
+  -- read all vertices
+  for line in code:gmatch("(.-)\n") do
+    local matched, captures = line:match("v (%S+) (%S+) (%S+)")
+    if matched then
+      vertices:push({
+        pos = {tonumber(captures[1]), tonumber(captures[2]), tonumber(captures[3])},
+        col = {1, 1, 1, 1},
+        uv = {0, 0},
+      })
+    end
+  end
+
+  -- read all indices
+  for line in code:gmatch("(.-)\n") do
+    local matched, captures = line:match("f (%S+) (%S+) (%S+)")
+    if matched then
+      indices:push(tointeger(captures[1]) - 1)
+      indices:push(tointeger(captures[2]) - 1)
+      indices:push(tointeger(captures[3]) - 1)
+    end
+  end
+
+  result.vertices = vertices
+  result.indices = indices
+
+  return result
+end
+
+
 function Mesh:init(world: *World, id: string <comptime>)
   ## local a = "entropy.scene.meshes." .. id.value
   World.r(#[a]#, Instance)
