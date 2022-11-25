@@ -152,7 +152,7 @@ cameras[camera_idx]:look_at({ 0, 0, 0 })
 
 -- load meshes
 local meshes = world:s("entropy.scene.meshes", Mesh)
-local cube_mesh_idx = meshes:create(Mesh.load_from_obj("./cube.obj"))
+local cube_mesh_idx = meshes:create(Mesh.load_from_obj_comptime("./cube.obj"))
 local cube_mesh = &meshes[cube_mesh_idx]
 cube_mesh:init(world, "cube")
 
@@ -248,16 +248,16 @@ while not context:should_close() do
     speed = 10
   end
   if is_forward_pressed then
-    cameras[camera_idx].pos = cameras[camera_idx].pos + cameras[camera_idx].rot:scale(speed)
+    cameras[camera_idx].pos = cameras[camera_idx].pos + cameras[camera_idx].rot * speed
   end
   if is_backward_pressed then
-    cameras[camera_idx].pos = cameras[camera_idx].pos - cameras[camera_idx].rot:scale(speed)
+    cameras[camera_idx].pos = cameras[camera_idx].pos - cameras[camera_idx].rot * speed
   end
   if is_left_pressed then
-    cameras[camera_idx].pos = cameras[camera_idx].pos - cameras[camera_idx].rot:cross({0, 1, 0}):norm():scale(speed)
+    cameras[camera_idx].pos = cameras[camera_idx].pos - cameras[camera_idx].rot:cross({0, 1, 0}):norm() * speed
   end
   if is_right_pressed then
-    cameras[camera_idx].pos = cameras[camera_idx].pos + cameras[camera_idx].rot:cross({0, 1, 0}):norm():scale(speed)
+    cameras[camera_idx].pos = cameras[camera_idx].pos + cameras[camera_idx].rot:cross({0, 1, 0}):norm() * speed
   end
   if is_up_pressed then
     cameras[camera_idx].pos = cameras[camera_idx].pos + {0, speed, 0}
