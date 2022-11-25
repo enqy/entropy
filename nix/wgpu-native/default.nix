@@ -90,14 +90,18 @@ in
         export RUSTFLAGS="-C linker-flavor=ld --cfg=web_sys_unstable_apis $''\{RUSTFLAGS}"
       '';
 
-    ZIG_CC_FLAGS = lib.optionals stdenv.hostPlatform.isDarwin [
-      "--sysroot=${apple_sdk.MacOSX-SDK}"
-      "-L${apple_sdk.MacOSX-SDK}/usr/lib"
-      "-F${apple_sdk.frameworks.CoreFoundation}/Library/Frameworks"
-      "-F${apple_sdk.frameworks.CoreGraphics}/Library/Frameworks"
-      "-F${apple_sdk.frameworks.Metal}/Library/Frameworks"
-      "-F${apple_sdk.frameworks.QuartzCore}/Library/Frameworks"
-    ];
+    ZIG_CC_FLAGS =
+      lib.optionals stdenv.hostPlatform.isDarwin [
+        "--sysroot=${apple_sdk.MacOSX-SDK}"
+        "-L${apple_sdk.MacOSX-SDK}/usr/lib"
+        "-F${apple_sdk.frameworks.CoreFoundation}/Library/Frameworks"
+        "-F${apple_sdk.frameworks.CoreGraphics}/Library/Frameworks"
+        "-F${apple_sdk.frameworks.Metal}/Library/Frameworks"
+        "-F${apple_sdk.frameworks.QuartzCore}/Library/Frameworks"
+      ]
+      ++ lib.optionals stdenv.hostPlatform.isWasm [
+        "-Wl,--export-dynamic"
+      ];
 
     # manually do what rustPlatform.bindgenHook does when building for darwin and wasm
     LIBCLANG_PATH = lib.optionalString (stdenv.hostPlatform.isDarwin || stdenv.hostPlatform.isWasm) "${pkgsBuildBuild.clang.cc.lib}/lib";
