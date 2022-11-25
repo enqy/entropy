@@ -1,6 +1,6 @@
 require "math"
 
-## local function impl(T)
+## local function impl(T, B)
 function #|T|#.__eq(a: #|T|#, b: #|T|#): boolean
   return (a.x == b.x) and (a.y == b.y) and (a.z == b.z) and (a.w == b.w)
 end
@@ -32,8 +32,36 @@ function #|T|#.__unm(a: #|T|#): #|T|#
   }
 end
 
-function #|T|#:__len(): number
+function #|T|#:__mul(s: #|B|#): #|T|#
+  return {
+    x = self.x * s,
+    y = self.y * s,
+    z = self.z * s,
+    w = self.w * s,
+  }
+end
+
+function #|T|#:dot(b: #|T|#): #|B|#
+  return self.x * b.x + self.y * b.y + self.z * b.z + self.w * b.w
+end
+
+function #|T|#:__len(): #|B|#
   return math.sqrt((self.x * self.x) + (self.y * self.y) + (self.z * self.z) + (self.w * self.w))
+end
+
+-- this is actually length squared
+function #|T|#:__bnot(): #|B|#
+  return (self.x * self.x) + (self.y * self.y) + (self.z * self.z) + (self.w * self.w)
+end
+
+function #|T|#:norm(): #|T|#
+  local len = #self
+  return {
+    x = self.x / len,
+    y = self.y / len,
+    z = self.z / len,
+    w = self.w / len,
+  }
 end
 
 function #|T|#:__tostring(): string
@@ -47,7 +75,7 @@ local Quat: type = @record{
   z: float32,
   w: float32,
 }
-## impl("Quat")
+## impl("Quat", "float32")
 
 local DQuat: type = @record{
   x: float64,
@@ -55,7 +83,7 @@ local DQuat: type = @record{
   z: float64,
   w: float64,
 }
-## impl("DQuat")
+## impl("DQuat", "float64")
 local Quat.D = DQuat
 
 return Quat

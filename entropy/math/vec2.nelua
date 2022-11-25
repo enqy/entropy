@@ -1,6 +1,6 @@
 require "math"
 
-## local function impl(T)
+## local function impl(T, B)
 function #|T|#.__eq(a: #|T|#, b: #|T|#): boolean
   return (a.x == b.x) and (a.y == b.y)
 end
@@ -26,8 +26,39 @@ function #|T|#.__unm(a: #|T|#): #|T|#
   }
 end
 
-function #|T|#:__len(): number
+function #|T|#:__mul(s: #|B|#): #|T|#
+  return {
+    x = self.x * s,
+    y = self.y * s,
+  }
+end
+
+function #|T|#:dot(b: #|T|#): #|B|#
+  return self.x * b.x + self.y * b.y
+end
+
+function #|T|#:cross(b: #|T|#): #|T|#
+  return {
+    x = self.x * b.y - self.y * b.x,
+    y = self.y * b.x - self.x * b.y,
+  }
+end
+
+function #|T|#:__len(): #|B|#
   return math.sqrt((self.x * self.x) + (self.y * self.y))
+end
+
+-- this is actually length squared
+function #|T|#:__bnot(): #|B|#
+  return (self.x * self.x) + (self.y * self.y)
+end
+
+function #|T|#:norm(): #|T|#
+  local len = #self
+  return {
+    x = self.x / len,
+    y = self.y / len,
+  }
 end
 
 function #|T|#:__tostring(): string
@@ -39,13 +70,13 @@ local Vec2: type = @record{
   x: float32,
   y: float32,
 }
-## impl("Vec2")
+## impl("Vec2", "float32")
 
 local DVec2: type = @record{
   x: float64,
   y: float64,
 }
-## impl("DVec2")
+## impl("DVec2", "float64")
 local Vec2.D = DVec2
 
 return Vec2

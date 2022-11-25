@@ -29,7 +29,7 @@ function #|T|#.__unm(a: #|T|#): #|T|#
   }
 end
 
-function #|T|#:scale(s: #|B|#): #|T|#
+function #|T|#:__mul(s: #|B|#): #|T|#
   return {
     x = self.x * s,
     y = self.y * s,
@@ -37,7 +37,7 @@ function #|T|#:scale(s: #|B|#): #|T|#
   }
 end
 
-function #|T|#:dot(b: #|T|#): number
+function #|T|#:dot(b: #|T|#): #|B|#
   return self.x * b.x + self.y * b.y + self.z * b.z
 end
 
@@ -49,8 +49,13 @@ function #|T|#:cross(b: #|T|#): #|T|#
   }
 end
 
-function #|T|#:__len(): number
+function #|T|#:__len(): #|B|#
   return math.sqrt((self.x * self.x) + (self.y * self.y) + (self.z * self.z))
+end
+
+-- this is actually length squared
+function #|T|#:__bnot(): #|B|#
+  return (self.x * self.x) + (self.y * self.y) + (self.z * self.z)
 end
 
 function #|T|#:norm(): #|T|#
