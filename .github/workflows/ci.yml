@@ -27,6 +27,18 @@ jobs:
       - name: Run Build (${{ matrix.host_arch }}-${{ matrix.host_os }})
         run: nix -L build .#app/${{ matrix.host_os }}/${{ matrix.host_arch }}
 
+  build-wasm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v18
+
+      - name: Run Build (wasm32-freestanding)
+        run: nix -L build .#app/wasm
+
   release:
     runs-on: ubuntu-latest
 
