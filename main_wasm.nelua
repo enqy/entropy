@@ -11,12 +11,18 @@ local Camera = require "entropy.scene.camera"
 local Mesh = require "entropy.scene.mesh"
 local Event = require "entropy.defs.event"
 
+local function print(s: cstring): void <cimport>
+end
+
+
 local context: Context
 context:init(".entropy-canvas", 512, 512, true)
 
 local renderer: Renderer(BasicImpl)
 
 local function onInit() <cexport, codename 'onInit'>
+  print(tostring(context.device))
+
   renderer:init(context.device, context.format, context.width, context.height)
 
   -- setup camera
@@ -33,3 +39,9 @@ local function onInit() <cexport, codename 'onInit'>
   cameras[camera_idx]:look_at({ 0, 0, 0 })
 end
 
+local function onAnimationFrame() <cexport, codename 'onAnimationFrame'>
+  local view = context:view()
+  renderer:render(view, &world)
+  context:present()
+  context:drop_view(view)
+end
