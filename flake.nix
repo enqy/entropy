@@ -45,7 +45,7 @@
       flake = false;
     };
     wgpu-native = {
-      url = "git+ssh://git@github.com/wozeparrot/wgpu-native.git?submodules=1";
+      url = "git+https://github.com/wozeparrot/wgpu-native.git?submodules=1";
       flake = false;
     };
     glfw = {

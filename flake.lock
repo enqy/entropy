@@ -231,12 +231,12 @@
         "revCount": 642,
         "submodules": true,
         "type": "git",
-        "url": "ssh://git@github.com/wozeparrot/wgpu-native.git"
+        "url": "https://github.com/wozeparrot/wgpu-native.git"
       },
       "original": {
         "submodules": true,
         "type": "git",
-        "url": "ssh://git@github.com/wozeparrot/wgpu-native.git"
+        "url": "https://github.com/wozeparrot/wgpu-native.git"
       }
     },
     "zig": {
