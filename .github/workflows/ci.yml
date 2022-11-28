@@ -28,6 +28,7 @@ jobs:
         run: nix -L build .#app/${{ matrix.host_os }}/${{ matrix.host_arch }}
 
   build-wasm:
+    name: build (ubuntu-latest, freestanding, wasm32)
     runs-on: ubuntu-latest
 
     steps:
@@ -39,7 +40,8 @@ jobs:
       - name: Run Build (wasm32-freestanding)
         run: nix -L build .#app/wasm
 
-  release:
+  build-windows:
+    name: build (ubuntu-latest, windows, x86_64)
     runs-on: ubuntu-latest
 
     steps:
