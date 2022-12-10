@@ -2,7 +2,7 @@ require "glfw"
 require "glfwnative"
 require "wgpu"
 
-local render = require "entropy.render"
+local Render = require "entropy.render"
 local Event = require "entropy.defs.event"
 
 require "list"
@@ -55,7 +55,7 @@ function GLFWContext:resize(width: uint32, height: uint32): void
   self:create_swapchain()
 end
 
-function GLFWContext:init(title: string, width: uint32, height: uint32, vsync: boolean): void
+function GLFWContext:init(title: string, width: uint32, height: uint32, vsync: boolean, render: *Render): void
   -- init glfw
   glfwInit()
 
@@ -110,7 +110,7 @@ function GLFWContext:init(title: string, width: uint32, height: uint32, vsync: b
 ## if ccinfo.is_windows then
   require "windows"
   self.surface = wgpuInstanceCreateSurface(
-    nilptr,
+    render.instance,
     &(@WGPUSurfaceDescriptor){
       nextInChain = (@*WGPUChainedStruct)(&(@WGPUSurfaceDescriptorFromWindowsHWND){
         chain = (@WGPUChainedStruct){
@@ -123,7 +123,7 @@ function GLFWContext:init(title: string, width: uint32, height: uint32, vsync: b
   )
 ## elseif ccinfo.is_linux then
   self.surface = wgpuInstanceCreateSurface(
-    nilptr,
+    render.instance,
     &(@WGPUSurfaceDescriptor){
       nextInChain = (@*WGPUChainedStruct)(&(@WGPUSurfaceDescriptorFromWaylandSurface){
         chain = (@WGPUChainedStruct){
@@ -143,7 +143,7 @@ function GLFWContext:init(title: string, width: uint32, height: uint32, vsync: b
     [ns_window.contentView setLayer:metal_layer];
   ]] ]==]
   self.surface = wgpuInstanceCreateSurface(
-    nilptr,
+    render.instance,
     &(@WGPUSurfaceDescriptor){
       nextInChain = (@*WGPUChainedStruct)(&(@WGPUSurfaceDescriptorFromMetalLayer){
         chain = (@WGPUChainedStruct){
@@ -153,22 +153,10 @@ function GLFWContext:init(title: string, width: uint32, height: uint32, vsync: b
       }),
     }
   )
-## elseif ccinfo.is_wasm then
-  self.surface = wgpuInstanceCreateSurface(
-    nilptr,
-    &(@WGPUSurfaceDescriptor){
-      nextInChain = (@*WGPUChainedStruct)(&(@WGPUSurfaceDescriptorFromCanvasHTMLSelector){
-        chain = (@WGPUChainedStruct){
-          sType = WGPUSType_SurfaceDescriptorFromCanvasHTMLSelector,
-        },
-        selector = ".entropy-canvas",
-      }),
-    }
-  )
 ## end
 
   -- request adapter and device
-  self.adapter, self.device = render.request_adapter_device(self.surface)
+  self.adapter, self.device = render:request_adapter_device(self.surface)
 
   -- get surface format
   self.format = wgpuSurfaceGetPreferredFormat(self.surface, self.adapter)

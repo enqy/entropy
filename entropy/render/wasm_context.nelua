@@ -1,6 +1,6 @@
 require "wgpu"
 
-local render = require "entropy.render"
+local Render = require "entropy.render"
 local Event = require "entropy.defs.event"
 
 require "list"
@@ -52,10 +52,10 @@ function WASMContext:resize(width: uint32, height: uint32): void
   self:create_swapchain()
 end
 
-function WASMContext:init(selector: string, width: uint32, height: uint32, vsync: boolean): void
+function WASMContext:init(selector: string, width: uint32, height: uint32, vsync: boolean, render: *Render): void
   -- create webgpu surface for window
   self.surface = wgpuInstanceCreateSurface(
-    nilptr,
+    render.instance,
     &(@WGPUSurfaceDescriptor){
       nextInChain = (@*WGPUChainedStruct)(&(@WGPUSurfaceDescriptorFromCanvasHTMLSelector){
         chain = (@WGPUChainedStruct){
@@ -67,7 +67,7 @@ function WASMContext:init(selector: string, width: uint32, height: uint32, vsync
   )
 
   -- request adapter and device
-  self.adapter, self.device = render.request_adapter_device(self.surface)
+  self.adapter, self.device = render:request_adapter_device(self.surface)
 
   -- get surface format
   self.format = wgpuSurfaceGetPreferredFormat(self.surface, self.adapter)

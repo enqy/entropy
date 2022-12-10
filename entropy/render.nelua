@@ -1,13 +1,23 @@
 require "wgpu"
 
-local render: type = @record{}
+local Render: type = @record{
+  instance: WGPUInstance,
+}
 
-function render.request_adapter_device(surface: WGPUSurface): (WGPUAdapter, WGPUDevice)
+function Render:default(): void
+  self.instance = wgpuCreateInstance(&(@WGPUInstanceDescriptor){});
+end
+
+function Render:cleanup(): void
+  wgpuInstanceDrop(self.instance)
+end
+
+function Render:request_adapter_device(surface: WGPUSurface): (WGPUAdapter, WGPUDevice)
   -- request adapter, always high performance
   -- TODO: test not forcing vulkan
   local adapter: WGPUAdapter
   wgpuInstanceRequestAdapter(
-    nilptr,
+    self.instance,
     &(@WGPURequestAdapterOptions){
       nextInChain = (@*WGPUChainedStruct)(&(@WGPUAdapterExtras){
         chain = (@WGPUChainedStruct){
@@ -66,4 +76,4 @@ function render.request_adapter_device(surface: WGPUSurface): (WGPUAdapter, WGPU
   return adapter, device
 end
 
-return render
+return Render

@@ -110,6 +110,7 @@ wgpuSetLogCallback((@WGPULogCallback)(function(level: WGPULogLevel, msg: cstring
 end))
 wgpuSetLogLevel(WGPULogLevel_Info)
 
+local Render = require 'entropy.render'
 local Context = require 'entropy.render.glfw_context'
 local Renderer = require "entropy.render.renderer"
 local BasicImpl = require "entropy.render.impl.basic"
@@ -118,8 +119,11 @@ local Camera = require "entropy.scene.camera"
 local Mesh = require "entropy.scene.mesh"
 local Event = require "entropy.defs.event"
 
+local render: Render
+render:default()
+
 local context: Context
-context:init("testing", 512, 512, true)
+context:init("testing", 512, 512, true, render)
 
 ##[[
 local Impl = ComposeImpl({
@@ -294,3 +298,4 @@ end
 
 renderer:cleanup()
 context:cleanup()
+render:cleanup()
