@@ -1,6 +1,8 @@
 local World = require "entropy.world"
 local Renderer = require "entropy.render.renderer"
 
+-- TODO: manage z-buffer and other shared resources
+
 ## function ComposeImpl(Impls)
   local Impl: type = @record{}
   ## Impl.value.is_renderer_impl = true

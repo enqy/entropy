@@ -4,9 +4,9 @@ local World = require "entropy.world"
 local world: World
 
 local Render = require 'entropy.render'
-local Context = require 'entropy.render.wasm_context'
+local Context = require 'entropy.render.context.wasm'
 local Renderer = require "entropy.render.renderer"
-local BasicImpl = require "entropy.render.impl.basic"
+local MeshImpl = require "entropy.render.impl.mesh"
 require "entropy.render.impl.compose"
 local Camera = require "entropy.scene.camera"
 local Mesh = require "entropy.scene.mesh"
@@ -15,12 +15,12 @@ local Event = require "entropy.defs.event"
 local function print(s: cstring): void <cimport> end
 
 local render: Render
-render:default()
+render:init_default()
 
 local context: Context
 context:init(".entropy-canvas", 512, 512, true, render)
 
-local renderer: Renderer(BasicImpl)
+local renderer: Renderer(MeshImpl)
 
 local function onInit() <cexport, codename 'onInit'>
   print(tostring(context.device))

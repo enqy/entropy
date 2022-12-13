@@ -4,7 +4,7 @@ local Render: type = @record{
   instance: WGPUInstance,
 }
 
-function Render:default(): void
+function Render:init_default(): void
   self.instance = wgpuCreateInstance(&(@WGPUInstanceDescriptor){});
 end
 

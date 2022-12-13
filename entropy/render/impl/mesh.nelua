@@ -25,7 +25,7 @@ local Impl: type = @record{
 
 function Impl:init(renderer: a_renderer): void
   -- load vertex shader
-  local vs_shader = Shader.load_from_file_comptime("entropy/render/impl/basic/vert.wgsl")
+  local vs_shader = Shader.load_from_file_comptime("entropy/render/impl/mesh/vert.wgsl")
   vs_shader:create(renderer.device)
 
   -- vertex shader stuff
@@ -87,7 +87,7 @@ function Impl:init(renderer: a_renderer): void
     buffers = &vertex_buffer_layouts,
   }
 
-  local fs_shader = Shader.load_from_file_comptime("entropy/render/impl/basic/frag.wgsl")
+  local fs_shader = Shader.load_from_file_comptime("entropy/render/impl/mesh/frag.wgsl")
   fs_shader:create(renderer.device)
 
   -- fragment shader stuff
@@ -137,7 +137,7 @@ function Impl:init(renderer: a_renderer): void
   self.globals_buffer = wgpuDeviceCreateBuffer(
     renderer.device,
     &(@WGPUBufferDescriptor){
-      label = "basic globals buffer",
+      label = "mesh globals buffer",
       usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst,
       size = #Globals,
       mappedAtCreation = false,
@@ -146,7 +146,7 @@ function Impl:init(renderer: a_renderer): void
   self.globals_bind_group = wgpuDeviceCreateBindGroup(
     renderer.device,
     &(@WGPUBindGroupDescriptor){
-      label = "basic globals bind group",
+      label = "mesh globals bind group",
       layout = globals_bind_group_layout,
       entryCount = 1,
       entries = &(@[]WGPUBindGroupEntry){
@@ -183,7 +183,7 @@ function Impl:init(renderer: a_renderer): void
     }
   )
   local pipeline_descriptor = (@WGPURenderPipelineDescriptor){
-    label = "basic render pipeline",
+    label = "mesh render pipeline",
     layout = pipeline_layout,
     vertex = vertex,
     fragment = &fragment,
