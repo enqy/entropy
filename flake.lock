@@ -224,10 +224,10 @@
     "wgpu-native": {
       "flake": false,
       "locked": {
-        "lastModified": 1673044313,
+        "lastModified": 1673057742,
         "narHash": "sha256-uxq42rzW5xfxKpnIkjK/w6KMgfY5/X2wqwdLBu44/Gg=",
         "ref": "refs/heads/master",
-        "rev": "0d3e07a5b4827f0cff78b4cb75cf4075067d823a",
+        "rev": "5c81c22393647076792499b24d448b4ba57d39b9",
         "revCount": 639,
         "submodules": true,
         "type": "git",
