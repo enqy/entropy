@@ -3,11 +3,6 @@ struct CameraUniform {
 }
 @group(0) @binding(0) var<uniform> camera: CameraUniform;
 
-struct DrawPushConstants {
-    model: mat4x4<f32>,
-}
-var<push_constant> draw: DrawPushConstants;
-
 struct InstanceInput {
     @location(5) model_matrix_0: vec4<f32>,
     @location(6) model_matrix_1: vec4<f32>,

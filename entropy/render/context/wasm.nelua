@@ -54,6 +54,7 @@ end
 
 function WASMContext:init(selector: string, width: uint32, height: uint32, vsync: boolean, render: *Render): void
   -- create webgpu surface for window
+  print("creating surface")
   self.surface = wgpuInstanceCreateSurface(
     render.instance,
     &(@WGPUSurfaceDescriptor){
@@ -65,8 +66,10 @@ function WASMContext:init(selector: string, width: uint32, height: uint32, vsync
       }),
     }
   )
+  print("surface created", tostring(self.surface), self.surface)
 
   -- request adapter and device
+  print("requesting adapter and device")
   self.adapter, self.device = render:request_adapter_device(self.surface)
 
   -- get surface format

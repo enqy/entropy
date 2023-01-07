@@ -167,6 +167,7 @@ function Impl:init(renderer: a_renderer): void
       bindGroupLayouts = &(@[]WGPUBindGroupLayout){
         globals_bind_group_layout
       },
+      --[[
       nextInChain = (@*WGPUChainedStruct)(&(@WGPUPipelineLayoutExtras){
         chain = (@WGPUChainedStruct){
           sType = WGPUSType_PipelineLayoutExtras,
@@ -180,6 +181,7 @@ function Impl:init(renderer: a_renderer): void
           },
         },
       }),
+      ]]
     }
   )
   local pipeline_descriptor = (@WGPURenderPipelineDescriptor){
@@ -260,9 +262,9 @@ function Impl:render(renderer: a_renderer, pass: WGPURenderPassEncoder, encoder:
 
   local meshes = world:s("entropy.scene.meshes", Mesh)
   for id, mesh in mpairs(meshes) do
-    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, mesh.vertex_buffer, 0, 0)
-    wgpuRenderPassEncoderSetIndexBuffer(pass, mesh.index_buffer, WGPUIndexFormat_Uint32, 0)
-    wgpuRenderPassEncoderSetVertexBuffer(pass, 1, mesh.instance_buffer, 0, 0)
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 0, mesh.vertex_buffer, 0, #Mesh.Vertex * #mesh.vertices)
+    wgpuRenderPassEncoderSetIndexBuffer(pass, mesh.index_buffer, WGPUIndexFormat_Uint32, 0, #uint32 * #mesh.indices)
+    wgpuRenderPassEncoderSetVertexBuffer(pass, 1, mesh.instance_buffer, 0, #Mesh.Instance * #mesh.instances)
 
     wgpuRenderPassEncoderDrawIndexed(pass, #mesh.indices, #mesh.instances, 0, 0, 0)
   end

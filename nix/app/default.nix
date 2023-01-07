@@ -208,8 +208,7 @@ in
           "-I${zig}/lib/libc/include/generic-musl/"
           "-I${zig}/lib/libc/musl/include/"
           "-shared"
-          "-Wl,--import-symbols,--import-memory"
-          "-rdynamic"
+          "-Wl,--import-symbols,--export-dynamic,--import-memory"
         ];
 
       buildPhase = ''

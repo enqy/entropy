@@ -12,18 +12,18 @@ local Camera = require "entropy.scene.camera"
 local Mesh = require "entropy.scene.mesh"
 local Event = require "entropy.defs.event"
 
-local function print(s: cstring): void <cimport> end
+-- local function print(s: cstring): void <cimport> end
 
 local render: Render
-render:init_default()
-
 local context: Context
-context:init(".entropy-canvas", 512, 512, true, render)
-
 local renderer: Renderer(MeshImpl)
 
 local function onInit() <cexport, codename 'onInit'>
-  print(tostring(context.device))
+  print("onInit")
+
+  render:init_default()
+
+  context:init(".entropy-canvas", 512, 512, true, render)
 
   renderer:init(context.device, context.format, context.width, context.height)
 

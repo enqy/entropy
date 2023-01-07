@@ -15,21 +15,25 @@ end
 function Render:request_adapter_device(surface: WGPUSurface): (WGPUAdapter, WGPUDevice)
   -- request adapter, always high performance
   -- TODO: test not forcing vulkan
+  print("requesting adapter")
   local adapter: WGPUAdapter
   wgpuInstanceRequestAdapter(
     self.instance,
     &(@WGPURequestAdapterOptions){
+      --[[
       nextInChain = (@*WGPUChainedStruct)(&(@WGPUAdapterExtras){
         chain = (@WGPUChainedStruct){
           sType = WGPUSType_AdapterExtras,
         },
         backend = WGPUBackendType_Vulkan,
       }),
-      powerPreference = WGPUPowerPreference_LowPower,
+      ]]
+      --powerPreference = WGPUPowerPreference_LowPower,
       compatibleSurface = surface,
       forceFallbackAdapter = false,
     },
     function (status: WGPURequestAdapterStatus, received: WGPUAdapter, message: cstring, userdata: pointer): void
+      print("adapter status: ", tostring(status), " | message: ", message)
       $(@*WGPUAdapter)(userdata) = received
     end,
     &adapter
@@ -39,32 +43,65 @@ function Render:request_adapter_device(surface: WGPUSurface): (WGPUAdapter, WGPU
   while not adapter do end
 
   -- request device
+  print("requesting device")
   local device: WGPUDevice
   wgpuAdapterRequestDevice(
     adapter,
     &(@WGPUDeviceDescriptor){
+      --[[
       nextInChain = (@*WGPUChainedStruct)(&(@WGPUDeviceExtras){
         chain = (@WGPUChainedStruct){
           sType = WGPUSType_DeviceExtras,
         },
       }),
+      ]]
       requiredLimits = &(@WGPURequiredLimits){
         limits = (@WGPULimits){
           maxBindGroups = 8,
+          maxTextureDimension1D = WGPU_LIMIT_U32_UNDEFINED,
+          maxTextureDimension2D = WGPU_LIMIT_U32_UNDEFINED,
+          maxTextureDimension3D = WGPU_LIMIT_U32_UNDEFINED,
+          maxTextureArrayLayers = WGPU_LIMIT_U32_UNDEFINED,
+          maxDynamicUniformBuffersPerPipelineLayout = WGPU_LIMIT_U32_UNDEFINED,
+          maxDynamicStorageBuffersPerPipelineLayout = WGPU_LIMIT_U32_UNDEFINED,
+          maxSampledTexturesPerShaderStage = WGPU_LIMIT_U32_UNDEFINED,
+          maxSamplersPerShaderStage = WGPU_LIMIT_U32_UNDEFINED,
+          maxStorageBuffersPerShaderStage = WGPU_LIMIT_U32_UNDEFINED,
+          maxStorageTexturesPerShaderStage = WGPU_LIMIT_U32_UNDEFINED,
+          maxUniformBuffersPerShaderStage = WGPU_LIMIT_U32_UNDEFINED,
+          maxUniformBufferBindingSize = WGPU_LIMIT_U64_UNDEFINED,
+          maxStorageBufferBindingSize = WGPU_LIMIT_U64_UNDEFINED,
+          minUniformBufferOffsetAlignment = WGPU_LIMIT_U32_UNDEFINED,
+          minStorageBufferOffsetAlignment = WGPU_LIMIT_U32_UNDEFINED,
+          maxVertexBuffers = WGPU_LIMIT_U32_UNDEFINED,
+          maxVertexAttributes = WGPU_LIMIT_U32_UNDEFINED,
+          maxVertexBufferArrayStride = WGPU_LIMIT_U32_UNDEFINED,
+          maxInterStageShaderComponents = WGPU_LIMIT_U32_UNDEFINED,
+          maxComputeWorkgroupStorageSize = WGPU_LIMIT_U32_UNDEFINED,
+          maxComputeInvocationsPerWorkgroup = WGPU_LIMIT_U32_UNDEFINED,
+          maxComputeWorkgroupSizeX = WGPU_LIMIT_U32_UNDEFINED,
+          maxComputeWorkgroupSizeY = WGPU_LIMIT_U32_UNDEFINED,
+          maxComputeWorkgroupSizeZ = WGPU_LIMIT_U32_UNDEFINED,
+          maxComputeWorkgroupsPerDimension = WGPU_LIMIT_U32_UNDEFINED,
         },
+        --[[
         nextInChain = (@*WGPUChainedStruct)(&(@WGPURequiredLimitsExtras){
           chain = (@WGPUChainedStruct){
             sType = WGPUSType_RequiredLimitsExtras,
           },
           maxPushConstantSize = 128,
         }),
+        ]]
       },
+      --[[
       requiredFeaturesCount = 1,
       requiredFeatures = &(@[]WGPUFeatureName){
         WGPUNativeFeature_PUSH_CONSTANTS
       },
+      ]]
     },
     function (status: WGPURequestDeviceStatus, received: WGPUDevice, message: cstring, userdata: pointer): void
+      print("device status: ", tostring(status), " | message: ", message)
       $(@*WGPUDevice)(userdata) = received
     end,
     &device
