@@ -224,11 +224,11 @@
     "wgpu-native": {
       "flake": false,
       "locked": {
-        "lastModified": 1673057742,
-        "narHash": "sha256-uxq42rzW5xfxKpnIkjK/w6KMgfY5/X2wqwdLBu44/Gg=",
+        "lastModified": 1673825195,
+        "narHash": "sha256-lV5fqfLRvtEkOv2o//iO/1Y+lIG65X+dxtn7zvkSyWM=",
         "ref": "refs/heads/master",
-        "rev": "5c81c22393647076792499b24d448b4ba57d39b9",
-        "revCount": 639,
+        "rev": "7db6d701a4ce5754212a1a5af1694072dfc7209a",
+        "revCount": 645,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/wozeparrot/wgpu-native.git"
