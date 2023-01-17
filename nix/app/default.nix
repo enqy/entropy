@@ -5,6 +5,8 @@
   zigTargetMap,
   inputs,
   makeWrapper,
+  wasm-bindgen-cli,
+  binaryen,
   zig-cc,
   zig-ld,
   zig-ar,
@@ -66,7 +68,8 @@ in
           zig-ranlib
           zig-rc
         ]
-        ++ lib.optionals nixos [makeWrapper];
+        ++ lib.optionals nixos [makeWrapper]
+        ++ lib.optionals stdenv.hostPlatform.isWasm [wasm-bindgen-cli binaryen];
 
       CC = "zig-cc";
       LD = "zig-ld";
@@ -250,5 +253,9 @@ in
         ''
         + lib.optionalString stdenv.hostPlatform.isWasm ''
           mv $out/bin/${pname} $out/bin/${pname}.wasm
+
+          wasm-bindgen $out/bin/${pname}.wasm --out-dir $out/pkg --no-typescript --target web
+          sed -i -n -e '3,$p' $out/pkg/${pname}.js
+          # TODO: finish patching the file
         '';
     }

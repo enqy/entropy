@@ -374,16 +374,18 @@
                 };
             };
 
-            naga = recurseIntoAttrs {
-              linux = recurseIntoAttrs {
-                x86_64 = let
-                  craneLib = (crane.mkLib linuxPkgs.x86_64).overrideToolchain rustToolchain;
-                in
-                  linuxPkgs.x86_64.callPackage ./nix/naga {
-                    inherit craneLib inputs rustcTargetMap;
-                  };
-              };
-            };
+            # this is broken because they don't include Cargo.lock
+            # needs a patch
+            # naga = recurseIntoAttrs {
+            #   linux = recurseIntoAttrs {
+            #     x86_64 = let
+            #       craneLib = (crane.mkLib linuxPkgs.x86_64).overrideToolchain rustToolchain;
+            #     in
+            #       linuxPkgs.x86_64.callPackage ./nix/naga {
+            #         inherit craneLib inputs rustcTargetMap;
+            #       };
+            #   };
+            # };
 
             # ===== NELUA =====
             nelua = pkgs.callPackage ./nix/nelua {inherit inputs;};

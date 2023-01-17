@@ -31,6 +31,9 @@ in
     # this works here for MinGW but ymmv
     pkgsBuildBuild = lib.optionals (stdenv.hostPlatform.isMinGW) [pkgsBuildBuild.rustPlatform.bindgenHook];
 
+    # this works here for aarch64-linux but ymmv
+    pkgsBuildHost = lib.optionals (stdenv.hostPlatform.isAarch64 && stdenv.hostPlatform.isLinux) [rustPlatform.bindgenHook];
+
     nativeBuildInputs =
       [
         zig-cc
@@ -44,7 +47,8 @@ in
       # doesn't work when building for darwin from a non-darwin host
       # also doesn't work when building for wasm
       # also doesn't work here when building for MinGW
-      ++ lib.optionals (!stdenv.hostPlatform.isDarwin && !stdenv.hostPlatform.isWasm && !stdenv.hostPlatform.isMinGW) [
+      # also doesn't work here when building for aarch64-linux
+      ++ lib.optionals (!stdenv.hostPlatform.isDarwin && !stdenv.hostPlatform.isWasm && !stdenv.hostPlatform.isMinGW && !stdenv.hostPlatform.isAarch64) [
         rustPlatform.bindgenHook
       ];
 

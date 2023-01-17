@@ -13,22 +13,12 @@ function Render:cleanup(): void
 end
 
 function Render:request_adapter_device(surface: WGPUSurface): (WGPUAdapter, WGPUDevice)
-  -- request adapter, always high performance
-  -- TODO: test not forcing vulkan
+  -- request adapter
   print("requesting adapter")
   local adapter: WGPUAdapter
   wgpuInstanceRequestAdapter(
     self.instance,
     &(@WGPURequestAdapterOptions){
-      --[[
-      nextInChain = (@*WGPUChainedStruct)(&(@WGPUAdapterExtras){
-        chain = (@WGPUChainedStruct){
-          sType = WGPUSType_AdapterExtras,
-        },
-        backend = WGPUBackendType_Vulkan,
-      }),
-      ]]
-      --powerPreference = WGPUPowerPreference_LowPower,
       compatibleSurface = surface,
       forceFallbackAdapter = false,
     },
