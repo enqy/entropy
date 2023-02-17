@@ -327,13 +327,13 @@
             wgpu-native = recurseIntoAttrs {
               linux = recurseIntoAttrs {
                 x86_64 = let
-                  craneLib = (crane.mkLib linuxPkgs.x86_64).overrideToolchain rustToolchain;
+                  craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
                 in
                   linuxPkgs.x86_64.callPackage ./nix/wgpu-native {
                     inherit craneLib inputs zigTargetMap rustcTargetMap;
                   };
                 aarch64 = let
-                  craneLib = (crane.mkLib linuxPkgs.aarch64).overrideToolchain rustToolchain;
+                  craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
                 in
                   linuxPkgs.aarch64.callPackage ./nix/wgpu-native {
                     inherit craneLib inputs zigTargetMap rustcTargetMap;
@@ -345,7 +345,7 @@
                     rustc = rustToolchain;
                     cargo = rustToolchain;
                   };
-                  craneLib = (crane.mkLib windowsPkgs.x86_64).overrideToolchain rustToolchain;
+                  craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
                 in
                   windowsPkgs.x86_64.callPackage ./nix/wgpu-native {
                     inherit craneLib inputs rustPlatform zigTargetMap rustcTargetMap;
@@ -431,9 +431,14 @@
                 vulkan-tools
                 vulkan-tools-lunarg
                 vulkan-validation-layers
+                (vulkan-extension-layer.overrideAttrs (old: {
+                  setupHook = "";
+                }))
+                vulkan-loader
                 wayland
                 wine64
                 zigpkgs.master
+                libGL
               ]
               ++ [
                 # need to wrap nelua here to pass correct LD_LIBRARY_PATH
@@ -442,7 +447,7 @@
 
                   postInstall = ''
                     wrapProgram $out/bin/nelua \
-                      --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath (with pkgs; [wayland libxkbcommon vulkan-loader])}
+                      --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath (with pkgs; [wayland libxkbcommon vulkan-loader libGL])}
                   '';
                 }))
                 packages."glfw/linux/x86_64"
