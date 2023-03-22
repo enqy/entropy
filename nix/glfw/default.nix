@@ -140,6 +140,6 @@ in
     ];
 
     postInstall = lib.optional (stdenv.hostPlatform.isMinGW) ''
-      ln -fs $out/lib/libglfw3dll.a $out/lib/glfw3.lib
+      ln -fs $out/lib/libglfw3.a $out/lib/glfw3.lib
     '';
   }

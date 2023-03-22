@@ -104,6 +104,7 @@ in
         "-F${apple_sdk.frameworks.QuartzCore}/Library/Frameworks"
       ]
       ++ lib.optionals stdenv.hostPlatform.isWasm [
+        "-shared"
         "-Wl,--export-dynamic"
       ];
 

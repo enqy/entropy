@@ -45,7 +45,8 @@
       flake = false;
     };
     wgpu-native = {
-      url = "git+https://github.com/wozeparrot/wgpu-native.git?submodules=1";
+      # url = "git+https://github.com/wozeparrot/wgpu-native.git?submodules=1";
+      url = "git+https://github.com/gfx-rs/wgpu-native.git?submodules=1";
       flake = false;
     };
     glfw = {
@@ -59,7 +60,6 @@
   };
 
   outputs = inputs @ {
-    self,
     nixpkgs,
     rust-overlay,
     zig,
@@ -103,6 +103,11 @@
                 ;;
                 -liconv) ;;
                 --gc-sections) ;;
+                "-Wl,--no-undefined-version") ;;
+                "-Wl,-exported_symbols_list"*) ;;
+                "-Wl,-dylib") ;;
+                "-Wl,/build/rustc"*) ;;
+                "-Wl,--disable-auto-image-base") ;;
                 *) args+=("$arg") ;;
               esac
             done
@@ -292,6 +297,7 @@
                   wgpu-native = wgpu-native.darwin.aarch64;
                 } {};
               };
+              # broken for now until https://github.com/gfx-rs/wgpu/issues/3430 is fixed + other web stuff in wgpu-native
               wasm = wasmPkgs.callPackage ./nix/app {
                 inherit nelua glfw-nelua glfwnative-nelua wgpu-nelua entropy inputs zigTargetMap;
                 wgpu-native = wgpu-native.wasm;
