@@ -15,11 +15,14 @@
   zig-ranlib,
   zig-rc,
   zig,
-  cargo,
   darwin,
+  apple_sdk_11_0 ? null,
 }: let
   stdenv = stdenvNoCC;
-  apple_sdk = darwin.apple_sdk;
+  apple_sdk =
+    if !stdenv.buildPlatform.isDarwin
+    then darwin.apple_sdk_11_0
+    else apple_sdk_11_0;
 in
   craneLib.buildPackage {
     inherit stdenv;
