@@ -12,7 +12,7 @@ jobs:
   build:
     strategy:
       matrix:
-        build_os: [ ubuntu-latest ]
+        build_os: [ ubuntu-latest, macos-latest ]
         host_os: [ linux, nixos, darwin ]
         host_arch: [ x86_64, aarch64 ]
 
