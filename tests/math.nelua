@@ -1,0 +1,6 @@
+require "tests.nester"
+
+return function()
+  nester.describe("Vec2", require "tests.math.vec2")
+  nester.describe("Vec3", require "tests.math.vec3")
+end

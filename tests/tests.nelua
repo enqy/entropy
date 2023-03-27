@@ -1,0 +1,8 @@
+require "tests.nester"
+
+nester.describe("entropy", function()
+  nester.describe("math", require "tests.math")
+end)
+
+nester.report()
+nester.exit()

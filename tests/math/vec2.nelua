@@ -1,0 +1,81 @@
+require "tests.nester"
+local Vec2 = require "entropy.math.vec2"
+
+return function()
+    nester.it("add two vectors", function()
+        local a: Vec2 = {1, 2}
+        local b: Vec2 = {3, 4}
+
+        local c = a + b
+
+        expect.equal(c, (@Vec2){4, 6})
+    end)
+
+    nester.it("subtract two vectors", function()
+        local a: Vec2 = {1, 2}
+        local b: Vec2 = {3, 4}
+
+        local c = a - b
+
+        expect.equal(c, (@Vec2){-2, -2})
+    end)
+
+    nester.it("negate a vector", function()
+        local a: Vec2 = {1, 2}
+
+        local c = -a
+
+        expect.equal(c, (@Vec2){-1, -2})
+    end)
+
+    nester.it("multiply by a scalar rhs", function()
+        local a: Vec2 = {1, 2}
+        local b = 3
+
+        local c = a * b
+
+        expect.equal(c, (@Vec2){3, 6})
+    end)
+
+    nester.it("dot product", function()
+        local a: Vec2 = {1, 2}
+        local b: Vec2 = {3, 4}
+
+        local c = a:dot(b)
+
+        expect.equal(c, 11)
+    end)
+
+    nester.it("cross product", function()
+        local a: Vec2 = {1, 2}
+        local b: Vec2 = {3, 4}
+
+        local c = a:cross(b)
+
+        expect.equal(c, (@Vec2){-2, 2})
+    end)
+
+    nester.it("length", function()
+        local a: Vec2 = {3, 4}
+
+        local c = #a
+
+        expect.equal(c, 5)
+    end)
+
+    nester.it("square length", function()
+        local a: Vec2 = {3, 4}
+
+        local c = ~a
+
+        expect.equal(c, 25)
+    end)
+
+    nester.it("normalize", function()
+        local a: Vec2 = {3, 4}
+
+        local c = a:norm()
+
+        expect.equal(c, (@Vec2){3 / #a, 4 / #a})
+    end)
+end
