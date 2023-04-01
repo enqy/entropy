@@ -12,11 +12,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1679285709,
-        "narHash": "sha256-oERwmwZPZ5BOqSv6cmcXfjIBPrFR6dp02oGE8mA+1n4=",
+        "lastModified": 1680063688,
+        "narHash": "sha256-hVt0i96VjwxKb/PvPfxM2otfvz923b8JHQ/l5XWeDIM=",
         "owner": "ipetkov",
         "repo": "crane",
-        "rev": "2552a2d1ccf33d43259a9e00f93dbacb9e6d6bed",
+        "rev": "6736e8be8e451b49954213241360e3b72529e47f",
         "type": "github"
       },
       "original": {
@@ -95,11 +95,11 @@
     "glfw": {
       "flake": false,
       "locked": {
-        "lastModified": 1677851235,
-        "narHash": "sha256-EDgbKk/cxeNXK6J6gFZK1tasPaq/xSdopW1n1DiSvJk=",
+        "lastModified": 1679947416,
+        "narHash": "sha256-0AmWuAKkYVUx5ECGNHppt/frAOUy3xsuYM9/IDPKxIs=",
         "owner": "glfw",
         "repo": "glfw",
-        "rev": "9a87635686c7fcb63ca63149c5b179b85a53a725",
+        "rev": "fbdb53b9ca457ab01675e20d9127cb62d8db88b8",
         "type": "github"
       },
       "original": {
@@ -111,11 +111,11 @@
     "naga": {
       "flake": false,
       "locked": {
-        "lastModified": 1679329312,
-        "narHash": "sha256-NH27j61X/vNdK08AO30MQKc2PlgxqK/eUkfirnrfmbI=",
+        "lastModified": 1680309043,
+        "narHash": "sha256-ZgdXnO3fbfK8wEr98u2D9NsAS60wdQql+6LA0q3uCGA=",
         "owner": "gfx-rs",
         "repo": "naga",
-        "rev": "0b87d1918a906da57341366de4d2b875e09753ee",
+        "rev": "da8e911d9d207a7571241e875f7ac066856e8b3f",
         "type": "github"
       },
       "original": {
@@ -127,11 +127,11 @@
     "nelua": {
       "flake": false,
       "locked": {
-        "lastModified": 1676237007,
-        "narHash": "sha256-JhE9e5CV/jnUbZYktkEEFHNM7jNq7D76jfkJw+YbI/o=",
+        "lastModified": 1679835874,
+        "narHash": "sha256-vJae8yx6PrYR45vRM/6fn6aEvUo7lxHSD/iX/77iVAo=",
         "owner": "edubart",
         "repo": "nelua-lang",
-        "rev": "a124e74e039887da7aec8f62094068f3ac42a502",
+        "rev": "e084bf1cc8a5651c9fdd96bc4205a890e5ab1fca",
         "type": "github"
       },
       "original": {
@@ -160,11 +160,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1679262748,
-        "narHash": "sha256-DQCrrAFrkxijC6haUzOC5ZoFqpcv/tg2WxnyW3np1Cc=",
+        "lastModified": 1680213900,
+        "narHash": "sha256-cIDr5WZIj3EkKyCgj/6j3HBH4Jj1W296z7HTcWj1aMA=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "60c1d71f2ba4c80178ec84523c2ca0801522e0a6",
+        "rev": "e3652e0735fbec227f342712f180f4f21f0594f2",
         "type": "github"
       },
       "original": {
@@ -224,11 +224,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1679451618,
-        "narHash": "sha256-gWFYRgmeT+8xDYHK4HSuCY9Pi7mSxC+2illHrmDkG7A=",
+        "lastModified": 1680315536,
+        "narHash": "sha256-0AsBuKssJMbcRcw4HJQwJsUHhZxR5+gaf6xPQayhR44=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "a89d328ca7d106c3fdbbd072b6c7088ab5b798a3",
+        "rev": "5c8c151bdd639074a0051325c16df1a64ee23497",
         "type": "github"
       },
       "original": {
@@ -240,11 +240,11 @@
     "wgpu-native": {
       "flake": false,
       "locked": {
-        "lastModified": 1678867973,
-        "narHash": "sha256-cY0Zkm6JCUigloZQPCkN9NleWrZZNL9t2xk1U71TyWg=",
+        "lastModified": 1679664961,
+        "narHash": "sha256-T+a84eAFV01/FmTDheLehlqoNxgxPGfGHmYWy48bIDM=",
         "ref": "refs/heads/master",
-        "rev": "87da4305241b47abd6b21d465603e2a9aa2a7854",
-        "revCount": 652,
+        "rev": "240e65a96e20f4ee409c70ed45c030534b6f7100",
+        "revCount": 654,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/gfx-rs/wgpu-native.git"
@@ -266,11 +266,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1679444501,
-        "narHash": "sha256-EEvnz9Ky4s8e1QJ7gTyo7gj87rRBv3mtBbVnMT9jlM4=",
+        "lastModified": 1680308637,
+        "narHash": "sha256-gas/Oo1hYbYOHzr1TBoHGH1mEzMMlPIdosb3yt573c0=",
         "owner": "mitchellh",
         "repo": "zig-overlay",
-        "rev": "122e7d73835391d47ca70159c795be9c38a2c316",
+        "rev": "0d01cdde8c66b2b49cb30f8b52f11237b1ae5f6f",
         "type": "github"
       },
       "original": {
