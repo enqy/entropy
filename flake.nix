@@ -109,6 +109,7 @@
                 "-Wl,-dylib") ;;
                 "-Wl,/build/rustc"*) ;;
                 "-Wl,--disable-auto-image-base") ;;
+                "-Wl,--dynamicbase") ;;
                 *) args+=("$arg") ;;
               esac
             done
