@@ -12,11 +12,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1682796879,
-        "narHash": "sha256-X0oDZylzDXBt7RBtYXBvFexARRFvousej15feeemAx0=",
+        "lastModified": 1683134812,
+        "narHash": "sha256-yUiArtneEBCTYt7rOg/tLr1iv4AmjFu5tdGa0OVpjbo=",
         "owner": "ipetkov",
         "repo": "crane",
-        "rev": "db21a44eb056ef65a33d9d2648ecc964b4acaddc",
+        "rev": "8708b19627b2dfc2d1ac332b74383b8abdd429f0",
         "type": "github"
       },
       "original": {
@@ -114,11 +114,11 @@
     "naga": {
       "flake": false,
       "locked": {
-        "lastModified": 1682426966,
-        "narHash": "sha256-4MKZC+TpgllvxM3iQ4Ve66WzSZlZRek05a3nKCe7Vvo=",
+        "lastModified": 1683028259,
+        "narHash": "sha256-Ojwrg1wFotcl/ntvfu0XamaDJj4aWUZV+M74FCgauiw=",
         "owner": "gfx-rs",
         "repo": "naga",
-        "rev": "9befaed7e985fb9a23322e9f19baf2a95bfd8b9c",
+        "rev": "da3f43394f3afd12b2776c3e29f69abaca7ca582",
         "type": "github"
       },
       "original": {
@@ -163,11 +163,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1682786779,
-        "narHash": "sha256-m7QFzPS/CE8hbkbIVK4UStihAQMtczr0vSpOgETOM1g=",
+        "lastModified": 1683014792,
+        "narHash": "sha256-6Va9iVtmmsw4raBc3QKvQT2KT/NGRWlvUlJj46zN8B8=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "08e4dc3a907a6dfec8bb3bbf1540d8abbffea22b",
+        "rev": "1a411f23ba299db155a5b45d5e145b85a7aafc42",
         "type": "github"
       },
       "original": {
@@ -204,11 +204,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1680488274,
-        "narHash": "sha256-0vYMrZDdokVmPQQXtFpnqA2wEgCCUXf5a3dDuDVshn0=",
+        "lastModified": 1683080331,
+        "narHash": "sha256-nGDvJ1DAxZIwdn6ww8IFwzoHb2rqBP4wv/65Wt5vflk=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "7ec2ff598a172c6e8584457167575b3a1a5d80d8",
+        "rev": "d59c3fa0cba8336e115b376c2d9e91053aa59e56",
         "type": "github"
       },
       "original": {
@@ -227,11 +227,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1682821181,
-        "narHash": "sha256-7MYRqO9Ge46sULbQwJbcH/IMDNBdxCGUO9w7bEOc3CI=",
+        "lastModified": 1683080331,
+        "narHash": "sha256-nGDvJ1DAxZIwdn6ww8IFwzoHb2rqBP4wv/65Wt5vflk=",
         "owner": "oxalica",
         "repo": "rust-overlay",
-        "rev": "1be440e9119e69b68151cd9c84876ff3063a2e45",
+        "rev": "d59c3fa0cba8336e115b376c2d9e91053aa59e56",
         "type": "github"
       },
       "original": {
@@ -258,11 +258,11 @@
     "wgpu-native": {
       "flake": false,
       "locked": {
-        "lastModified": 1682763863,
-        "narHash": "sha256-OYWFmNauIryBAdZgUiOAweZ1KCd4javYSab3iwfi6ro=",
+        "lastModified": 1682943032,
+        "narHash": "sha256-LObpCXHNxJZI7IP+EOAAbIZWJP5bOGmRHAUsW8Mzy7Q=",
         "ref": "refs/heads/trunk",
-        "rev": "41ea9bc1d7a21f616b11546954a8904fd986ac87",
-        "revCount": 659,
+        "rev": "bb5d6e9675914c11105621280de3ca8fabaed4ea",
+        "revCount": 660,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/gfx-rs/wgpu-native.git"
@@ -284,11 +284,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1682770019,
-        "narHash": "sha256-ySrrYhYxFwPq7pQbWX+62Qp+Va2mlF31zBpKVmLs2H0=",
+        "lastModified": 1683073327,
+        "narHash": "sha256-s1ZbDP/UophyQR6l9iEl7J8Yf3GatMV9crUvWZXOgXs=",
         "owner": "mitchellh",
         "repo": "zig-overlay",
-        "rev": "25ea43b1d64b93523f2463738b9308a07af530df",
+        "rev": "dfb0e13670cfbf6ba66821cb0d35f54c7e2912fc",
         "type": "github"
       },
       "original": {
