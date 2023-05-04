@@ -437,7 +437,6 @@
                 renderdoc
                 valgrind
                 vulkan-tools
-                vulkan-tools-lunarg
                 vulkan-validation-layers
                 (vulkan-extension-layer.overrideAttrs (old: {
                   setupHook = "";
