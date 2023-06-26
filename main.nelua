@@ -167,7 +167,7 @@ for y=-count,<count do
   for x=-count,<count do
     for z=-count,<count do
       local instance_idx = instances:create(cube_mesh:instance())
-      instances[instance_idx].transform = Mat4.from_pos({ x * 5, z * 5, y * 5 }) * Mat4.from_scl({ 1, 1, 1 })
+      instances[instance_idx].transform = Mat4.from_pos({ x * 5, z * 5, y * 5 }) * Mat4.from_scl({ 2, 2, 2 })
     end
   end
 end
