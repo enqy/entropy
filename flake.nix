@@ -110,6 +110,12 @@
                 "-Wl,/build/rustc"*) ;;
                 "-Wl,--disable-auto-image-base") ;;
                 "-Wl,--dynamicbase") ;;
+                "-Wl,--stack-first") ;;
+                "-Wl,--allow-undefined") ;;
+                "-Wl,--fatal-warnings") ;;
+                "-Wl,--no-demangle") ;;
+                "-Wl,--no-entry") ;;
+                "--target="*) ;; # we set our own target
                 *) args+=("$arg") ;;
               esac
             done

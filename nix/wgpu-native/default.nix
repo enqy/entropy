@@ -94,7 +94,7 @@ in
           else x) (lib.toUpper rustcTargetMap."${stdenv.buildPlatform.config}")}_LINKER=zig-cc
         export CC_wasm32_unknown_unknown=zig-cc
         export AR_wasm32_unknown_unknown=zig-ar
-        export RUSTFLAGS="-C linker-flavor=ld --cfg=web_sys_unstable_apis $''\{RUSTFLAGS}"
+        export RUSTFLAGS="-C linker-flavor=gcc --cfg=web_sys_unstable_apis $''\{RUSTFLAGS}"
       '';
 
     ZIG_CC_FLAGS =
