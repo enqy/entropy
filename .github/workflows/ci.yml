@@ -37,6 +37,7 @@ jobs:
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v4
+      - uses: DeterminateSystems/magic-nix-cache-action@v1
 
       - name: Run Build (wasm32-freestanding)
         run: nix -L build .#app/wasm
@@ -50,6 +51,7 @@ jobs:
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v4
+      - uses: DeterminateSystems/magic-nix-cache-action@v1
 
       - name: Run Build (Windows x86_64)
         run: nix -L build .#app/windows/x86_64
