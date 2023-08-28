@@ -131,8 +131,6 @@ function Mesh:instance(): Mesh.Instance
 end
 
 function Mesh:cleanup()
-  wgpuBufferDrop(self.vertex_buffer)
-  wgpuBufferDrop(self.index_buffer)
 end
 
 function Mesh:prepare(renderer: a_renderer)

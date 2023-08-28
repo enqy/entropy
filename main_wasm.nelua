@@ -45,5 +45,4 @@ local function onAnimationFrame() <cexport, codename 'onAnimationFrame'>
   local view = context:view()
   renderer:render(view, &world)
   context:present()
-  context:drop_view(view)
 end

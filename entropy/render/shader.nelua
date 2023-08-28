@@ -55,7 +55,6 @@ function Shader:create(device: WGPUDevice): void
 end
 
 function Shader:cleanup(): void
-  wgpuShaderModuleDrop(self.module)
 end
 
 return Shader

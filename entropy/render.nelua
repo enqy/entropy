@@ -9,7 +9,6 @@ function Render:init_default(): void
 end
 
 function Render:cleanup(): void
-  wgpuInstanceDrop(self.instance)
 end
 
 function Render:request_adapter_device(surface: WGPUSurface): (WGPUAdapter, WGPUDevice)

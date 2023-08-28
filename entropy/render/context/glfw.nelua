@@ -167,18 +167,11 @@ function GLFWContext:init(title: string, width: uint32, height: uint32, vsync: b
 end
 
 function GLFWContext:cleanup(): void
-  wgpuDeviceDrop(self.device)
-  wgpuAdapterDrop(self.adapter)
-
   glfwTerminate()
 end
 
 function GLFWContext:view(): WGPUTextureView <inline>
   return wgpuSwapChainGetCurrentTextureView(self.swapchain)
-end
-
-function GLFWContext:drop_view(view: WGPUTextureView): void <inline>
-  wgpuTextureViewDrop(view)
 end
 
 function GLFWContext:present(): void <inline>

@@ -81,16 +81,10 @@ function WASMContext:init(selector: string, width: uint32, height: uint32, vsync
 end
 
 function WASMContext:cleanup(): void
-  wgpuDeviceDrop(self.device)
-  wgpuAdapterDrop(self.adapter)
 end
 
 function WASMContext:view(): WGPUTextureView <inline>
   return wgpuSwapChainGetCurrentTextureView(self.swapchain)
-end
-
-function WASMContext:drop_view(view: WGPUTextureView): void <inline>
-  wgpuTextureViewDrop(view)
 end
 
 function WASMContext:present(): void <inline>

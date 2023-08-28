@@ -282,7 +282,6 @@ while not context:should_close() do
   local view = context:view()
   renderer:render(view, &world)
   context:present()
-  context:drop_view(view)
 
   fps_list:push(1 / (world:now() - now))
   if #fps_list > 30 then
