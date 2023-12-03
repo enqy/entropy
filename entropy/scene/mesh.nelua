@@ -141,7 +141,7 @@ function Mesh:prepare(renderer: a_renderer)
       label = "mesh vertex buffer",
       usage = WGPUBufferUsage_Vertex,
       size = #Mesh.Vertex * #self.vertices,
-      mappedAtCreation = true,
+      mappedAtCreation = 1,
     }
   )
   local vertex_buffer_mapped = (@*[0]Mesh.Vertex)(wgpuBufferGetMappedRange(self.vertex_buffer, 0, #Mesh.Vertex * #self.vertices))
@@ -157,7 +157,7 @@ function Mesh:prepare(renderer: a_renderer)
       label = "mesh index buffer",
       usage = WGPUBufferUsage_Index,
       size = #uint32 * #self.indices,
-      mappedAtCreation = true,
+      mappedAtCreation = 1,
     }
   )
   local index_buffer_mapped = (@*[0]uint32)(wgpuBufferGetMappedRange(self.index_buffer, 0, #uint32 * #self.indices))
@@ -173,7 +173,7 @@ function Mesh:prepare(renderer: a_renderer)
       label = "mesh instance buffer",
       usage = WGPUBufferUsage_Vertex | WGPUBufferUsage_CopyDst,
       size = #Mesh.Instance * #self.instances,
-      mappedAtCreation = true,
+      mappedAtCreation = 1,
     }
   )
   local instance_buffer_mapped = (@*[0]Mesh.Instance)(wgpuBufferGetMappedRange(self.instance_buffer, 0, #Mesh.Instance * #self.instances))

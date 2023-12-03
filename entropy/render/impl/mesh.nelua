@@ -122,7 +122,7 @@ function Impl:init(renderer: a_renderer): void
       visibility = WGPUShaderStage_Vertex,
       buffer = (@WGPUBufferBindingLayout){
         type = WGPUBufferBindingType_Uniform,
-        hasDynamicOffset = false,
+        hasDynamicOffset = 0,
         minBindingSize = #Globals,
       },
     },
@@ -140,7 +140,7 @@ function Impl:init(renderer: a_renderer): void
       label = "mesh globals buffer",
       usage = WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst,
       size = #Globals,
-      mappedAtCreation = false,
+      mappedAtCreation = 0,
     }
   )
   self.globals_bind_group = wgpuDeviceCreateBindGroup(
@@ -198,11 +198,11 @@ function Impl:init(renderer: a_renderer): void
     multisample = (@WGPUMultisampleState){
       count = 1,
       mask = 0xffffffff,
-      alphaToCoverageEnabled = false,
+      alphaToCoverageEnabled = 0,
     },
     depthStencil = &(@WGPUDepthStencilState){
       format = WGPUTextureFormat_Depth32Float,
-      depthWriteEnabled = true,
+      depthWriteEnabled = 1,
       depthCompare = WGPUCompareFunction_Less,
       stencilFront = (@WGPUStencilFaceState){
         compare = WGPUCompareFunction_Always,

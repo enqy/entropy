@@ -126,11 +126,11 @@ local World = require "entropy.world"
           depthLoadOp = WGPULoadOp_Clear,
           depthStoreOp = WGPUStoreOp_Store,
           depthClearValue = 1.0,
-          depthReadOnly = false,
+          depthReadOnly = 0,
           stencilLoadOp = WGPULoadOp_Clear,
           stencilStoreOp = WGPUStoreOp_Store,
           stencilClearValue = 0,
-          stencilReadOnly = false,
+          stencilReadOnly = 0,
         },
       }
     )

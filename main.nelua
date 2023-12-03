@@ -132,7 +132,7 @@ local Impl = ComposeImpl({
 ]]
 local ImplT = #[Impl]#
 local renderer: Renderer(ImplT)
-renderer:init(context.device, context.format, context.width, context.height)
+renderer:init(context.device, context.surface_config.format, context.surface_config.width, context.surface_config.height)
 
 -- setup resize callback
 context.user_pointer = &renderer

@@ -8,9 +8,8 @@ local Event = require "entropy.defs.event"
 require "list"
 
 local GLFWContext: type = @record{
-  width: uint32,
-  height: uint32,
   vsync: boolean,
+  surface_config: WGPUSurfaceConfiguration,
 
   user_pointer: pointer,
   resize_callback: function(pointer, uint32, uint32): void,
@@ -21,38 +20,23 @@ local GLFWContext: type = @record{
   adapter: WGPUAdapter,
   device: WGPUDevice,
 
-  format: WGPUTextureFormat,
-
-  swapchain: WGPUSwapChain,
-
   event_queue: list(Event),
 }
 
-function GLFWContext:create_swapchain(): void
-  local present_mode: WGPUPresentMode
+function GLFWContext:configure_surface(): void
   if self.vsync then
-    present_mode = WGPUPresentMode_Fifo
+    self.surface_config.presentMode = WGPUPresentMode_Fifo
   else
-    present_mode = WGPUPresentMode_Mailbox
+    self.surface_config.presentMode = WGPUPresentMode_Mailbox
   end
 
-  self.swapchain = wgpuDeviceCreateSwapChain(
-    self.device,
-    self.surface,
-    &(@WGPUSwapChainDescriptor){
-      usage = WGPUTextureUsage_RenderAttachment,
-      format = self.format,
-      width = self.width,
-      height = self.height,
-      presentMode = present_mode,
-    }
-  )
+  wgpuSurfaceConfigure(self.surface, self.surface_config)
 end
 
 function GLFWContext:resize(width: uint32, height: uint32): void
-  self.width = width
-  self.height = height
-  self:create_swapchain()
+  self.surface_config.width = width
+  self.surface_config.height = height
+  self:configure_surface()
 end
 
 function GLFWContext:init(title: string, width: uint32, height: uint32, vsync: boolean, render: *Render): void
@@ -64,8 +48,10 @@ function GLFWContext:init(title: string, width: uint32, height: uint32, vsync: b
   -- create glfw window
   self.window = glfwCreateWindow(width, height, title, nilptr, nilptr)
   assert(self.window, "failed to create window!")
-  self.width = width
-  self.height = height
+  self.surface_config = (@WGPUSurfaceConfiguration){
+    width = width,
+    height = height,
+  }
 
   -- set user pointer to ourselves
   glfwSetWindowUserPointer(self.window, self)
@@ -158,12 +144,18 @@ function GLFWContext:init(title: string, width: uint32, height: uint32, vsync: b
   -- request adapter and device
   self.adapter, self.device = render:request_adapter_device(self.surface)
 
-  -- get surface format
-  self.format = wgpuSurfaceGetPreferredFormat(self.surface, self.adapter)
+  -- get supported surface capabilities
+  local supported_surface_capabilities: WGPUSurfaceCapabilities
+  wgpuSurfaceGetCapabilities(self.surface, self.adapter, &supported_surface_capabilities)
+  defer wgpuSurfaceCapabilitiesFreeMembers(supported_surface_capabilities) end
+  self.surface_config.device = self.device
+  self.surface_config.usage = WGPUTextureUsage_RenderAttachment
+  self.surface_config.format = (@*[0]WGPUTextureFormat)(supported_surface_capabilities.formats)[0]
+  self.surface_config.alphaMode = (@*[0]WGPUCompositeAlphaMode)(supported_surface_capabilities.alphaModes)[0]
 
-  -- create initial swapchain
+  -- initial surface configuration
   self.vsync = vsync
-  self:create_swapchain()
+  self:configure_surface()
 end
 
 function GLFWContext:cleanup(): void
@@ -171,11 +163,16 @@ function GLFWContext:cleanup(): void
 end
 
 function GLFWContext:view(): WGPUTextureView <inline>
-  return wgpuSwapChainGetCurrentTextureView(self.swapchain)
+  local surface_texture: WGPUSurfaceTexture
+  wgpuSurfaceGetCurrentTexture(self.surface, &surface_texture)
+  if surface_texture == nilptr then
+    return nilptr
+  end
+  return wgpuTextureCreateView(surface_texture.texture, nilptr)
 end
 
 function GLFWContext:present(): void <inline>
-  wgpuSwapChainPresent(self.swapchain)
+  wgpuSurfacePresent(self.surface)
 end
 
 function GLFWContext:should_close(): boolean <inline>
