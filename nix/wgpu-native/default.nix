@@ -47,7 +47,7 @@ in
       # doesn't work when building for darwin from a non-darwin host
       # also doesn't work when building for wasm
       # also doesn't work here when building for MinGW
-      ++ lib.optionals (!stdenv.hostPlatform.isDarwin && !stdenv.hostPlatform.isWasm && !stdenv.hostPlatform.isMinGW) [
+      ++ lib.optionals (!stdenv.hostPlatform.isDarwin && !stdenv.hostPlatform.isWasm) [
         rustPlatform.bindgenHook
       ];
 

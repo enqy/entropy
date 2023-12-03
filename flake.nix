@@ -31,7 +31,6 @@
       url = "github:ipetkov/crane";
       inputs = {
         nixpkgs.follows = "nixpkgs";
-        flake-utils.follows = "flake-utils";
       };
     };
 
@@ -89,9 +88,9 @@
             for arg in "$@"; do
               case "$arg" in
                 *compiler_builtins*)
-                  if [[ "$ZIG_CC_TARGET" != "x86_64-windows-gnu" ]]; then
-                    args+=("$arg")
-                  fi
+                  # if [[ "$ZIG_CC_TARGET" != "x86_64-windows-gnu" ]]; then
+                  args+=("$arg")
+                  # fi
                 ;;
                 -lwindows) ;;
                 -l:libpthread.a) ;;
